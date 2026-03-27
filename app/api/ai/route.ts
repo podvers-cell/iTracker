@@ -27,10 +27,6 @@ async function verifyFirebaseIdTokenOrThrow(idToken: string) {
   const uid = data?.users?.[0]?.localId as string | undefined
   if (!uid) throw new Error("Invalid token")
 
-  const adminUid = process.env.ADMIN_UID
-  if (!adminUid) throw new Error("ADMIN_UID is not set")
-  if (uid !== adminUid) throw new Error("Forbidden")
-
   return uid
 }
 

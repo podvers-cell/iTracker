@@ -190,7 +190,7 @@ export default function ProjectDetailsPage({
     setFormError(null)
     setSavingExpense(true)
     try {
-      await addTransaction({
+      await addTransaction(user.uid, {
         projectId,
         type: "expense",
         amount,
@@ -226,7 +226,7 @@ export default function ProjectDetailsPage({
     setFormError(null)
     setSavingIncome(true)
     try {
-      await addTransaction({
+      await addTransaction(user.uid, {
         projectId,
         type: "income",
         amount,

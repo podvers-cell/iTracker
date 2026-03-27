@@ -171,7 +171,10 @@ export default function NewProjectPage() {
 
       console.log("[projects/new] before calling createProject", { payload })
 
-      const id = await createProject(payload)
+      const uid = user?.uid
+      if (!uid) throw new Error("Not signed in")
+
+      const id = await createProject(uid, payload)
 
       console.log("[projects/new] after createProject returns", { id })
       setSuccess(dict.projectNew.success)

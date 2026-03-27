@@ -5,10 +5,10 @@ import {
   doc,
   getDoc,
   getDocs,
-  orderBy,
   query,
   serverTimestamp,
   Timestamp,
+  where,
 } from "firebase/firestore"
 
 import { clientDb } from "@/lib/firebase/client"
@@ -32,6 +32,7 @@ export type Project = {
 }
 
 type ProjectDoc = {
+  ownerUid?: string
   name: string
   clientName?: string | null
   location?: string | null
@@ -82,11 +83,25 @@ function requireDb() {
   return db
 }
 
-export async function listProjects(): Promise<Project[]> {
+function requireOwnerUid(ownerUid: string | undefined) {
+  const uid = ownerUid?.trim()
+  if (!uid) throw new Error("Not signed in")
+  return uid
+}
+
+export async function listProjects(ownerUid: string): Promise<Project[]> {
+  const uid = requireOwnerUid(ownerUid)
   const db = requireDb()
-  const q = query(collection(db, "projects"), orderBy("updatedAt", "desc"))
+  // Single-field equality only (no composite index). Sort in memory.
+  const q = query(collection(db, "projects"), where("ownerUid", "==", uid))
   const snap = await getDocs(q)
-  return snap.docs.map((d) => normalizeProject(d.id, d.data() as ProjectDoc))
+  const items = snap.docs.map((d) => normalizeProject(d.id, d.data() as ProjectDoc))
+  items.sort((a, b) => {
+    const at = a.updatedAt?.getTime() ?? 0
+    const bt = b.updatedAt?.getTime() ?? 0
+    return bt - at
+  })
+  return items
 }
 
 export async function getProject(projectId: string): Promise<Project | null> {
@@ -111,12 +126,14 @@ export type CreateProjectInput = {
 }
 
 // Writes create the collection automatically (no manual setup required).
-export async function addProject(input: CreateProjectInput): Promise<string> {
+export async function addProject(ownerUid: string, input: CreateProjectInput): Promise<string> {
   console.log("[projects:data] createProject start", { input })
+  const uid = requireOwnerUid(ownerUid)
   try {
     const db = requireDb()
 
     const payload = {
+      ownerUid: uid,
       name: input.name.trim(),
       clientName: input.clientName?.trim() || null,
       location: input.location?.trim() || null,
@@ -155,8 +172,8 @@ export async function addProject(input: CreateProjectInput): Promise<string> {
 // Preferred name used across the app.
 export const createProject = addProject
 
-export async function getProjects(): Promise<Project[]> {
-  return listProjects()
+export async function getProjects(ownerUid: string): Promise<Project[]> {
+  return listProjects(ownerUid)
 }
 
 export async function getProjectById(projectId: string): Promise<Project | null> {
@@ -167,4 +184,3 @@ export async function deleteProjectById(projectId: string): Promise<void> {
   const db = requireDb()
   await deleteDoc(doc(db, "projects", projectId))
 }
-

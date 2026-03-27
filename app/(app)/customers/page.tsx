@@ -50,7 +50,7 @@ export default function CustomersPage() {
 
       if (!name) throw new Error("Name is required")
 
-      await addCustomer({
+      await addCustomer(user.uid, {
         name,
         phone: phone || null,
         notes: notes || null,

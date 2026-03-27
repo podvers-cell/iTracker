@@ -107,7 +107,7 @@ export default function FinancialsPage() {
       if (!category) throw new Error("Category is required")
       if (!date) throw new Error("Date is required")
 
-      await addTransaction({
+      await addTransaction(user.uid, {
         projectId,
         type,
         amount,

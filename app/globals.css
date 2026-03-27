@@ -277,4 +277,248 @@ html[lang="en"] {
   .text-glow-soft {
     text-shadow: 0 0 16px color-mix(in oklch, var(--primary) 40%, transparent);
   }
+
+  /* AI assistant floating button — pulse + “active” glow */
+  @keyframes assistant-fab-breathe {
+    0%,
+    100% {
+      transform: scale(1);
+      box-shadow:
+        0 12px 40px rgba(0, 0, 0, 0.55),
+        0 0 0 0 rgba(0, 0, 0, 0.2);
+    }
+    50% {
+      transform: scale(1.07);
+      box-shadow:
+        0 16px 52px rgba(0, 0, 0, 0.62),
+        0 0 0 10px rgba(0, 0, 0, 0);
+    }
+  }
+
+  .assistant-fab-button {
+    animation: assistant-fab-breathe 2.15s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .assistant-fab-button {
+      animation: none;
+    }
+  }
+
+  .group:hover .assistant-fab-button {
+    animation-play-state: paused;
+  }
+
+  .group:hover .assistant-fab-ping {
+    animation-play-state: paused;
+  }
+
+  /* Root splash screen */
+  @keyframes splash-orb-1 {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+      opacity: 0.32;
+    }
+    50% {
+      transform: translate(12%, -14%) scale(1.18);
+      opacity: 0.48;
+    }
+  }
+  @keyframes splash-orb-2 {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1.05);
+      opacity: 0.22;
+    }
+    50% {
+      transform: translate(-16%, 10%) scale(1.12);
+      opacity: 0.38;
+    }
+  }
+  @keyframes splash-orb-3 {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(0.98);
+      opacity: 0.26;
+    }
+    50% {
+      transform: translate(8%, 20%) scale(1.22);
+      opacity: 0.42;
+    }
+  }
+  @keyframes splash-logo-enter {
+    0% {
+      transform: scale(0.5) rotate(-12deg);
+      opacity: 0;
+      filter: blur(12px);
+    }
+    70% {
+      transform: scale(1.06) rotate(2deg);
+      opacity: 1;
+      filter: blur(0);
+    }
+    100% {
+      transform: scale(1) rotate(0deg);
+      opacity: 1;
+      filter: blur(0);
+    }
+  }
+  @keyframes splash-ring-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes splash-shine {
+    0% {
+      transform: translateX(-150%) skewX(-12deg);
+    }
+    100% {
+      transform: translateX(200%) skewX(-12deg);
+    }
+  }
+  @keyframes splash-progress-fill {
+    from {
+      width: 0%;
+    }
+    to {
+      width: 100%;
+    }
+  }
+  @keyframes splash-dot-pulse {
+    0%,
+    100% {
+      opacity: 0.2;
+      transform: scale(0.85);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .splash-orb-1 {
+    animation: splash-orb-1 9s ease-in-out infinite;
+  }
+  .splash-orb-2 {
+    animation: splash-orb-2 11s ease-in-out infinite;
+  }
+  .splash-orb-3 {
+    animation: splash-orb-3 8s ease-in-out infinite;
+  }
+  .splash-logo-enter {
+    animation: splash-logo-enter 1.15s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+  .splash-ring-spin {
+    animation: splash-ring-spin 2.8s linear infinite;
+  }
+  .splash-ring-spin-rev {
+    animation: splash-ring-spin 4s linear infinite reverse;
+  }
+  .splash-shine {
+    animation: splash-shine 2.2s ease-in-out infinite;
+  }
+  .splash-progress-bar {
+    width: 0%;
+    animation: splash-progress-fill 2s cubic-bezier(0.33, 1, 0.68, 1) forwards;
+  }
+  .splash-dot {
+    animation: splash-dot-pulse 1.4s ease-in-out infinite;
+  }
+  .splash-dot:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  .splash-dot:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .splash-orb-1,
+    .splash-orb-2,
+    .splash-orb-3 {
+      animation: none;
+      opacity: 0.3;
+    }
+    .splash-logo-enter {
+      animation: none;
+      opacity: 1;
+      transform: none;
+      filter: none;
+    }
+    .splash-ring-spin,
+    .splash-ring-spin-rev {
+      animation: none;
+    }
+    .splash-shine {
+      animation: none;
+    }
+    .splash-progress-bar {
+      animation: none;
+      width: 100%;
+    }
+    .splash-dot {
+      animation: none;
+      opacity: 0.7;
+    }
+  }
+}
+
+/*
+ * Scrollbars: hide while keeping scroll. Unlayered (beats Tailwind @layer).
+ * `.hide-scrollbar` is on <html> and <body> in app/layout.tsx for the root scroller;
+ * `*` covers nested overflow areas (dropdowns, sheets, assistant panel).
+ */
+.hide-scrollbar {
+  -ms-overflow-style: none !important; /* IE / legacy Edge */
+  scrollbar-width: none !important; /* Firefox, Chrome 121+ */
+  scrollbar-color: transparent transparent !important;
+}
+
+.hide-scrollbar::-webkit-scrollbar,
+.hide-scrollbar::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  background: transparent !important;
+}
+
+.hide-scrollbar::-webkit-scrollbar-track,
+.hide-scrollbar::-webkit-scrollbar-track-piece,
+.hide-scrollbar::-webkit-scrollbar-thumb,
+.hide-scrollbar::-webkit-scrollbar-corner {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  max-width: 0 !important;
+  max-height: 0 !important;
+  background: transparent !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scrollbar-color: transparent transparent;
+}
+
+*::-webkit-scrollbar,
+*::-webkit-scrollbar-button,
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track-piece,
+*::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-corner {
+  width: 0 !important;
+  height: 0 !important;
+  max-width: 0 !important;
+  max-height: 0 !important;
+  background: transparent !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+
+*::-webkit-scrollbar {
+  display: none !important;
 }

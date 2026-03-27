@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import type { LucideIcon } from "lucide-react"
 import {
   Briefcase,
@@ -270,6 +271,19 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <header className="relative h-40 overflow-hidden rounded-3xl border border-border/60 sm:h-44 md:h-48">
+        <Image
+          src="/images/hero-header.png"
+          alt=""
+          fill
+          priority
+          quality={100}
+          unoptimized
+          sizes="100vw"
+          className="object-cover object-left sm:object-[28%_center]"
+        />
+      </header>
+
       <div className="space-y-1">
         <h1 className="page-title">{dict.dashboard.title}</h1>
         <p className="page-subtitle">{dict.dashboard.overview}</p>

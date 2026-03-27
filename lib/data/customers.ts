@@ -4,10 +4,10 @@ import {
   deleteDoc,
   doc,
   getDocs,
-  orderBy,
   query,
   serverTimestamp,
   Timestamp,
+  where,
 } from "firebase/firestore"
 
 import { clientDb } from "@/lib/firebase/client"
@@ -22,6 +22,7 @@ export type Customer = {
 }
 
 type CustomerDoc = {
+  ownerUid?: string
   name: string
   phone?: string | null
   notes?: string | null
@@ -41,6 +42,12 @@ function requireDb() {
   return db
 }
 
+function requireOwnerUid(ownerUid: string | undefined) {
+  const uid = ownerUid?.trim()
+  if (!uid) throw new Error("Not signed in")
+  return uid
+}
+
 function tsToDate(ts?: Timestamp) {
   return ts ? ts.toDate() : null
 }
@@ -56,16 +63,25 @@ function normalizeCustomer(id: string, data: CustomerDoc): Customer {
   }
 }
 
-export async function getCustomers(): Promise<Customer[]> {
+export async function getCustomers(ownerUid: string): Promise<Customer[]> {
+  const uid = requireOwnerUid(ownerUid)
   const db = requireDb()
-  const q = query(collection(db, "customers"), orderBy("updatedAt", "desc"))
+  const q = query(collection(db, "customers"), where("ownerUid", "==", uid))
   const snap = await getDocs(q)
-  return snap.docs.map((d) => normalizeCustomer(d.id, d.data() as CustomerDoc))
+  const items = snap.docs.map((d) => normalizeCustomer(d.id, d.data() as CustomerDoc))
+  items.sort((a, b) => {
+    const at = a.updatedAt?.getTime() ?? 0
+    const bt = b.updatedAt?.getTime() ?? 0
+    return bt - at
+  })
+  return items
 }
 
-export async function addCustomer(input: CreateCustomerInput): Promise<string> {
+export async function addCustomer(ownerUid: string, input: CreateCustomerInput): Promise<string> {
+  const uid = requireOwnerUid(ownerUid)
   const db = requireDb()
   const ref = await addDoc(collection(db, "customers"), {
+    ownerUid: uid,
     name: input.name.trim(),
     phone: input.phone?.trim() || null,
     notes: input.notes?.trim() || null,

@@ -29,8 +29,11 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
+import type { Project } from "@/lib/data/projects"
+import type { Transaction } from "@/lib/data/transactions"
 import { useProjects } from "@/components/projects/useProjects"
 import { useAllTransactions } from "@/components/projects/useAllTransactions"
+import { DeadlineNotificationsButton } from "@/components/notifications/DeadlineNotificationsButton"
 
 type NavItem = {
   href: string
@@ -101,18 +104,38 @@ function MobileSettingsSheet({ userLabel }: { userLabel: string }) {
 
   return (
     <>
-      <Button
+      <button
         type="button"
-        variant="outline"
-        size="sm"
-        className="gap-2"
         onClick={() => setOpen(true)}
+        aria-label={dict.common.settings}
         aria-haspopup="dialog"
         aria-expanded={open}
+        className={cn(
+          "group relative grid size-12 shrink-0 place-items-center overflow-hidden rounded-full border shadow-lg",
+          "border-border/50 bg-background/75 backdrop-blur-xl backdrop-saturate-150",
+          "text-primary transition-all duration-300 ease-out",
+          "active:scale-[0.97]",
+          "hover:border-primary/35 hover:bg-background/85 hover:shadow-xl hover:shadow-primary/10",
+          open && "border-primary/45 ring-2 ring-primary/25 shadow-primary/15"
+        )}
       >
-        <Settings className="size-4" />
-        {dict.common.settings}
-      </Button>
+        <span
+          className={cn(
+            "absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent opacity-80 transition-opacity group-hover:opacity-100",
+            open && "from-primary/30"
+          )}
+          aria-hidden
+        />
+        <Settings
+          className={cn(
+            "relative size-5 transition-transform duration-300 ease-out",
+            "group-hover:rotate-90 group-active:scale-95",
+            open && "rotate-45"
+          )}
+          strokeWidth={2}
+          aria-hidden
+        />
+      </button>
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="center" className="gap-0 p-0 sm:w-full" showCloseButton>
@@ -212,11 +235,15 @@ function MobileBottomNav() {
 
 type ChatMsg = { role: "user" | "assistant"; text: string }
 
-function FloatingAssistantButton() {
+function FloatingAssistantButton({
+  projects,
+  transactions,
+}: {
+  projects: Project[]
+  transactions: Transaction[]
+}) {
   const { dict, locale } = useI18n()
   const { user } = useAuth()
-  const { projects } = useProjects()
-  const { transactions } = useAllTransactions()
   const [open, setOpen] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
   const [text, setText] = React.useState("")
@@ -283,52 +310,60 @@ function FloatingAssistantButton() {
   return (
     <>
       {open ? (
-        <div className="fixed bottom-24 right-4 z-40 w-[370px] max-w-[calc(100vw-1.25rem)] overflow-hidden rounded-3xl border border-border bg-card shadow-[0_20px_60px_rgba(0,0,0,0.22)] md:bottom-8 md:right-8">
-          <div className="flex items-center justify-between bg-primary px-4 py-3 text-primary-foreground">
-            <div className="flex items-center gap-2">
-              <div className="grid size-8 place-items-center rounded-full bg-primary-foreground/20">
-                <Sparkles className="size-4" />
+        <div
+          className={cn(
+            "fixed bottom-24 right-4 z-40 w-[370px] max-w-[calc(100vw-1.25rem)] overflow-hidden rounded-3xl md:bottom-8 md:right-8",
+            "border-2 border-zinc-600 bg-zinc-950 shadow-[0_24px_64px_rgba(0,0,0,0.7)]"
+          )}
+        >
+          <div className="flex items-center justify-between border-b border-zinc-700 bg-zinc-900 px-4 py-3">
+            <div className="flex items-center gap-3">
+              <div className="grid size-9 place-items-center rounded-xl border border-zinc-600 bg-zinc-800">
+                <Sparkles className="size-4 text-amber-300" strokeWidth={2} />
               </div>
               <div>
-                <div className="text-sm font-semibold">{dict.nav.assistant}</div>
-                <div className="text-[11px] opacity-90">{locale === "ar" ? "متصل الآن" : "Online now"}</div>
+                <div className="text-sm font-semibold tracking-tight text-zinc-100">
+                  {dict.nav.assistant}
+                </div>
+                <div className="text-[11px] text-zinc-400">{locale === "ar" ? "متصل الآن" : "Online now"}</div>
               </div>
             </div>
             <button
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Close assistant"
-              className="rounded-md p-1 hover:bg-primary-foreground/15"
+              className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
             >
               <X className="size-5" />
             </button>
           </div>
 
-          <div className="h-[360px] space-y-3 overflow-y-auto p-4 md:h-[420px]">
+          <div className="h-[360px] space-y-3 overflow-y-auto bg-zinc-950 p-4 md:h-[420px]">
             {messages.map((m, idx) => (
               <div key={idx} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
                 <div
                   className={cn(
-                    "max-w-[85%] rounded-2xl px-3 py-2 text-sm",
-                    m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
+                    "max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed",
+                    m.role === "user"
+                      ? "border border-violet-400 bg-violet-600 text-white shadow-md"
+                      : "border border-zinc-600 bg-zinc-800 text-zinc-100 shadow-sm"
                   )}
                 >
                   {m.text}
                 </div>
               </div>
             ))}
-            {loading ? (
-              <div className="text-xs text-muted-foreground">{dict.assistant.thinking}</div>
-            ) : null}
+            {loading ? <div className="text-xs text-zinc-500">{dict.assistant.thinking}</div> : null}
           </div>
 
-          <div className="border-t p-3">
+          <div className="border-t border-zinc-700 bg-zinc-900 p-3">
             <div className="flex items-center gap-2">
               <Input
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder={dict.assistant.placeholder}
                 disabled={loading}
+                className="h-11 rounded-2xl border-2 border-zinc-600 bg-zinc-950 text-zinc-50 placeholder:text-zinc-500 focus-visible:border-amber-500 focus-visible:ring-2 focus-visible:ring-amber-500/40"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault()
@@ -336,7 +371,13 @@ function FloatingAssistantButton() {
                   }
                 }}
               />
-              <Button size="sm" onClick={() => void send()} disabled={loading || !text.trim()}>
+              <Button
+                size="sm"
+                type="button"
+                onClick={() => void send()}
+                disabled={loading || !text.trim()}
+                className="h-11 shrink-0 rounded-2xl border-2 border-amber-400 bg-amber-500 px-4 font-semibold text-zinc-950 shadow-md hover:bg-amber-400 hover:border-amber-300 disabled:opacity-50"
+              >
                 {dict.assistant.send}
               </Button>
             </div>
@@ -344,32 +385,63 @@ function FloatingAssistantButton() {
         </div>
       ) : null}
 
-      <button
-        type="button"
-        aria-label="AI Assistant"
-        onClick={() => setOpen((v) => !v)}
-        className={cn(
-          "fixed z-30 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_14px_30px_rgba(79,70,229,0.35)] transition-transform hover:scale-105",
-          "bottom-24 md:bottom-8",
-          "right-4 md:right-8"
-        )}
-      >
-        {open ? <X className="size-6" /> : <Sparkles className="size-6" />}
-      </button>
+      <div className="group fixed bottom-24 right-4 z-30 md:bottom-8 md:right-8">
+        <div className="relative flex items-center justify-center">
+          {!open ? (
+            <>
+              <span
+                className="assistant-fab-ping pointer-events-none absolute -inset-2 rounded-full bg-black/12 motion-safe:animate-ping motion-safe:[animation-duration:2.2s]"
+                aria-hidden
+              />
+              <span
+                className="assistant-fab-ping pointer-events-none absolute -inset-2 rounded-full bg-black/6 motion-safe:animate-ping motion-safe:[animation-duration:2.2s] motion-safe:[animation-delay:0.8s]"
+                aria-hidden
+              />
+            </>
+          ) : null}
+          <button
+            type="button"
+            aria-label="AI Assistant"
+            onClick={() => setOpen((v) => !v)}
+            className={cn(
+              "relative flex size-[3.75rem] items-center justify-center rounded-full md:size-14",
+              "border-2 border-black bg-zinc-900 text-zinc-100",
+              "transition-all duration-200",
+              "hover:border-zinc-950 hover:bg-zinc-800",
+              "active:scale-[0.96]",
+              !open && "assistant-fab-button"
+            )}
+          >
+            {open ? (
+              <X className="size-6 text-zinc-100" strokeWidth={2.5} />
+            ) : (
+              <Sparkles className="size-7 text-zinc-100" strokeWidth={2.5} />
+            )}
+          </button>
+        </div>
+      </div>
     </>
   )
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { dict, locale } = useI18n()
+  const { dict } = useI18n()
   const { user } = useAuth()
+  const { projects, loading: projectsLoading } = useProjects()
+  const { transactions, loading: txLoading } = useAllTransactions()
+  const dataLoading = projectsLoading || txLoading
 
   const userLabel =
     user?.displayName?.trim() ||
     user?.email?.split("@")[0]?.trim() ||
     "Admin"
 
-  const rtl = locale === "ar"
+  const notifyProps = {
+    projects,
+    transactions,
+    loading: dataLoading,
+  } as const
+
   const sidebar = (
     <aside className="hidden w-80 px-6 py-6 md:block">
       <div className="hud-surface p-5 bg-sidebar">
@@ -391,11 +463,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   )
 
   const content = (
-    <div className="flex min-w-0 flex-1 flex-col px-5 py-6 md:px-8">
-      <div className="mb-4 flex items-center justify-end md:hidden">
-        <MobileSettingsSheet userLabel={userLabel} />
+    <div className="flex min-w-0 flex-1 flex-col">
+      <header className="shrink-0 px-5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 md:hidden">
+        <div className="flex min-w-0 items-center justify-between gap-3">
+          <Link
+            href="/dashboard"
+            className="flex shrink-0 items-center rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2"
+          >
+            <img
+              src="/logo.svg"
+              alt={dict.appName}
+              className="size-11 rounded-2xl object-contain"
+            />
+          </Link>
+          <div className="flex shrink-0 items-center justify-end gap-2">
+            <DeadlineNotificationsButton {...notifyProps} />
+            <MobileSettingsSheet userLabel={userLabel} />
+          </div>
+        </div>
+      </header>
+      <div className="hidden md:flex justify-start px-5 rtl:justify-end md:px-8 md:pt-6">
+        <DeadlineNotificationsButton {...notifyProps} />
       </div>
-      <main className="flex-1 pb-28 md:pb-0">{children}</main>
+      <main className="flex flex-1 flex-col px-5 py-6 pb-28 md:px-8 md:pb-0 md:pt-6">
+        {children}
+      </main>
     </div>
   )
 
@@ -408,7 +500,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <MobileBottomNav />
-      <FloatingAssistantButton />
+      <FloatingAssistantButton projects={projects} transactions={transactions} />
     </div>
   )
 }

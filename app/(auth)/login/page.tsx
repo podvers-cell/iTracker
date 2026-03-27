@@ -1,13 +1,31 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { signInWithEmailAndPassword } from "firebase/auth"
+import {
+  GoogleAuthProvider,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+} from "firebase/auth"
+import { Eye, EyeOff } from "lucide-react"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher"
+import { GoogleIcon } from "@/components/auth/GoogleIcon"
 import { useI18n } from "@/components/i18n/I18nProvider"
 import { clientAuth } from "@/lib/firebase/client"
 import { SubmitButton } from "@/components/ui/submit-button"
@@ -21,8 +39,17 @@ export default function LoginPage() {
 
   const [email, setEmail] = React.useState("")
   const [password, setPassword] = React.useState("")
+  const [showPassword, setShowPassword] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [submitting, setSubmitting] = React.useState(false)
+  const [googleLoading, setGoogleLoading] = React.useState(false)
+  const [resetOpen, setResetOpen] = React.useState(false)
+  const [resetEmail, setResetEmail] = React.useState("")
+  const [resetSending, setResetSending] = React.useState(false)
+  const [resetFeedback, setResetFeedback] = React.useState<
+    null | { type: "ok" | "err"; text: string }
+  >(null)
+  const busy = submitting || googleLoading
 
   React.useEffect(() => {
     if (loading) return
@@ -38,7 +65,7 @@ export default function LoginPage() {
     setSubmitting(true)
     try {
       const auth = clientAuth()
-      if (!auth) throw new Error("Firebase not configured")
+      if (!auth) throw new Error(dict.login.firebaseNotConfigured)
       await signInWithEmailAndPassword(auth, email.trim(), password)
       const next = searchParams.get("next") || "/dashboard"
       router.replace(next)
@@ -49,25 +76,106 @@ export default function LoginPage() {
     }
   }
 
+  async function onGoogleSignIn() {
+    setError(null)
+    setGoogleLoading(true)
+    try {
+      const auth = clientAuth()
+      if (!auth) throw new Error(dict.login.firebaseNotConfigured)
+      const provider = new GoogleAuthProvider()
+      provider.addScope("profile")
+      provider.addScope("email")
+      provider.setCustomParameters({ prompt: "select_account" })
+      await signInWithPopup(auth, provider)
+      const next = searchParams.get("next") || "/dashboard"
+      router.replace(next)
+    } catch (err: unknown) {
+      const code =
+        err && typeof err === "object" && "code" in err
+          ? String((err as { code?: string }).code)
+          : ""
+      if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
+        return
+      }
+      if (err instanceof Error) {
+        setError(err.message)
+      } else {
+        setError(dict.login.googleSignInFailed)
+      }
+    } finally {
+      setGoogleLoading(false)
+    }
+  }
+
+  function openPasswordReset() {
+    setResetEmail(email.trim())
+    setResetFeedback(null)
+    setResetOpen(true)
+  }
+
+  async function onSendPasswordReset() {
+    const trimmed = resetEmail.trim()
+    if (!trimmed) {
+      setResetFeedback({ type: "err", text: dict.login.resetEmailRequired })
+      return
+    }
+    setResetSending(true)
+    setResetFeedback(null)
+    try {
+      const auth = clientAuth()
+      if (!auth) throw new Error(dict.login.firebaseNotConfigured)
+      await sendPasswordResetEmail(auth, trimmed)
+      setResetFeedback({ type: "ok", text: dict.login.resetEmailSent })
+    } catch (e: unknown) {
+      const msg =
+        e instanceof Error ? e.message : dict.login.resetPasswordFailed
+      setResetFeedback({ type: "err", text: msg })
+    } finally {
+      setResetSending(false)
+    }
+  }
+
   return (
-    <div className="flex min-h-[100svh] items-center justify-center bg-muted/30 px-4 py-10">
+    <div className="relative flex min-h-[100svh] items-center justify-center bg-muted/30 px-4 py-10">
+      <div className="absolute left-4 top-[max(1rem,env(safe-area-inset-top))] z-10 sm:left-6">
+        <LanguageSwitcher iconOnly />
+      </div>
       <div className="w-full max-w-md space-y-4">
-        <div className="grid grid-cols-3 items-center">
-          <div />
-          <div className="flex justify-center">
-            <img src="/logo.svg" alt={dict.appName} className="size-40 rounded-3xl" />
-          </div>
-          <div className="flex justify-end">
-            <LanguageSwitcher />
-          </div>
+        <div className="flex justify-center">
+          <img src="/logo.svg" alt={dict.appName} className="size-40 rounded-3xl" />
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl">{dict.login.title}</CardTitle>
-            <div className="text-sm text-muted-foreground">{dict.login.subtitle}</div>
+            <CardTitle className="text-xl font-semibold tracking-tight">{dict.login.title}</CardTitle>
+            <p className="text-sm leading-relaxed text-muted-foreground">{dict.login.subtitle}</p>
           </CardHeader>
           <CardContent className="space-y-5">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 w-full gap-3 border-border/80 bg-background text-base font-medium shadow-sm hover:bg-muted/50"
+              disabled={busy}
+              onClick={() => void onGoogleSignIn()}
+            >
+              <GoogleIcon className="size-5 shrink-0" />
+              {googleLoading ? "…" : dict.login.continueWithGoogle}
+            </Button>
+
+            {error ? (
+              <div className="text-sm text-destructive" role="alert">
+                {error}
+              </div>
+            ) : null}
+
+            <div className="relative flex items-center py-1">
+              <Separator className="flex-1" />
+              <span className="bg-card px-3 text-xs font-medium text-muted-foreground">
+                {dict.login.orContinueWithEmail}
+              </span>
+              <Separator className="flex-1" />
+            </div>
+
             <form onSubmit={onSubmit} className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="email">{dict.login.email}</Label>
@@ -77,30 +185,119 @@ export default function LoginPage() {
                   autoComplete="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@email.com"
+                  placeholder={dict.login.emailPlaceholder}
+                  disabled={busy}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">{dict.login.password}</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                />
-                <div className="text-xs text-muted-foreground">{dict.login.hint}</div>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder={dict.login.passwordPlaceholder}
+                    className="pe-12"
+                    disabled={busy}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="absolute end-1.5 top-1/2 -translate-y-1/2 rounded-xl text-muted-foreground hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? dict.login.hidePassword : dict.login.showPassword}
+                    aria-pressed={showPassword}
+                    disabled={busy}
+                  >
+                    {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+                  </Button>
+                </div>
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="h-auto px-0 py-0 text-sm font-medium text-primary"
+                    disabled={busy}
+                    onClick={openPasswordReset}
+                  >
+                    {dict.login.forgotPassword}
+                  </Button>
+                </div>
+                {dict.login.hint ? (
+                  <div className="text-xs text-muted-foreground">{dict.login.hint}</div>
+                ) : null}
               </div>
 
-              {error ? <div className="text-sm text-destructive">{error}</div> : null}
-
-              <SubmitButton className="h-11 w-full text-base">
+              <SubmitButton className="h-11 w-full text-base" disabled={googleLoading}>
                 {submitting ? "..." : dict.login.submit}
               </SubmitButton>
             </form>
           </CardContent>
         </Card>
+
+        <p className="text-center text-sm text-muted-foreground">
+          <Link href="/register" className="font-medium text-primary underline-offset-4 hover:underline">
+            {dict.login.createAccount}
+          </Link>
+        </p>
+
+        <Sheet
+          open={resetOpen}
+          onOpenChange={(open) => {
+            setResetOpen(open)
+            if (!open) setResetFeedback(null)
+          }}
+        >
+          <SheetContent side="center" className="gap-0 p-0 sm:max-w-md" showCloseButton>
+            <SheetHeader className="border-b px-6 py-4 text-start">
+              <SheetTitle className="text-start">{dict.login.resetPasswordTitle}</SheetTitle>
+              <SheetDescription className="text-start">{dict.login.resetPasswordDescription}</SheetDescription>
+            </SheetHeader>
+            <div className="space-y-4 px-6 py-5">
+              {resetFeedback?.type === "ok" ? (
+                <p className="text-sm leading-relaxed text-muted-foreground">{resetFeedback.text}</p>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-email">{dict.login.email}</Label>
+                    <Input
+                      id="reset-email"
+                      type="email"
+                      autoComplete="email"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      placeholder={dict.login.emailPlaceholder}
+                      disabled={resetSending}
+                    />
+                  </div>
+                  {resetFeedback?.type === "err" ? (
+                    <p className="text-sm text-destructive" role="alert">
+                      {resetFeedback.text}
+                    </p>
+                  ) : null}
+                  <Button
+                    type="button"
+                    className="h-11 w-full"
+                    disabled={resetSending}
+                    onClick={() => void onSendPasswordReset()}
+                  >
+                    {resetSending ? "…" : dict.login.sendResetLink}
+                  </Button>
+                </>
+              )}
+            </div>
+            {resetFeedback?.type === "ok" ? (
+              <SheetFooter className="border-t px-6 py-4 sm:flex-row">
+                <Button type="button" className="w-full" variant="secondary" onClick={() => setResetOpen(false)}>
+                  {dict.login.resetPasswordClose}
+                </Button>
+              </SheetFooter>
+            ) : null}
+          </SheetContent>
+        </Sheet>
       </div>
     </div>
   )
