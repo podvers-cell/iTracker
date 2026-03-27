@@ -8,6 +8,7 @@ import {
   query,
   serverTimestamp,
   Timestamp,
+  updateDoc,
   where,
 } from "firebase/firestore"
 
@@ -183,4 +184,12 @@ export async function getProjectById(projectId: string): Promise<Project | null>
 export async function deleteProjectById(projectId: string): Promise<void> {
   const db = requireDb()
   await deleteDoc(doc(db, "projects", projectId))
+}
+
+export async function updateProjectStatus(projectId: string, status: ProjectStatus): Promise<void> {
+  const db = requireDb()
+  await updateDoc(doc(db, "projects", projectId), {
+    status,
+    updatedAt: serverTimestamp(),
+  })
 }

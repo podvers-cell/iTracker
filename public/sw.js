@@ -1,6 +1,11 @@
 /* eslint-disable no-restricted-globals */
-const VERSION = "itracker-sw-v1"
-const PRECACHE = ["/manifest.json", "/icons/icon-192.png", "/icons/icon-512.png"]
+const VERSION = "itrack-sw-v4"
+const PRECACHE = [
+  "/manifest.json",
+  "/icons/icon-192.png",
+  "/icons/icon-512.png",
+  "/gemini-mark.png",
+]
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

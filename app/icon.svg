@@ -1,24 +1,48 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 2000" role="img" aria-label="iTracker">
+<svg
+  id="Layer_1"
+  xmlns="http://www.w3.org/2000/svg"
+  xmlns:xlink="http://www.w3.org/1999/xlink"
+  version="1.1"
+  viewBox="0 0 2000 2000"
+  role="img"
+  aria-label="iTrack"
+>
   <defs>
     <style>
-      .bg {
-        fill: #000;
+      .st0 {
+        fill: url(#linear-gradient);
         stroke: #fff;
         stroke-miterlimit: 10;
         stroke-width: 2px;
       }
-      .wordmark {
+
+      .st1,
+      .st2 {
         isolation: isolate;
+      }
+
+      .st2 {
         fill: #fff;
-        font-family: MyriadPro-Semibold, "Myriad Pro", system-ui, sans-serif;
-        font-size: 310px;
+        font-family: MyriadPro-Semibold, 'Myriad Pro', system-ui, sans-serif;
+        font-size: 407.27px;
         font-weight: 600;
-        text-anchor: middle;
-        dominant-baseline: central;
       }
     </style>
+    <linearGradient
+      id="linear-gradient"
+      x1="1544.52"
+      y1="470.34"
+      x2="72.28"
+      y2="1902.39"
+      gradientUnits="userSpaceOnUse"
+    >
+      <stop offset=".04" stop-color="#242424" />
+      <stop offset="1" stop-color="#000" />
+    </linearGradient>
   </defs>
-  <rect class="bg" width="2000" height="2000" rx="566.72" ry="566.72"/>
-  <text class="wordmark" x="1000" y="1000">iTracker</text>
+  <rect class="st0" y="0" width="2000" height="2000" rx="490.04" ry="490.04" />
+  <g class="st1">
+    <text class="st2" transform="translate(468.54 1124.2)"><tspan x="0" y="0">iTrack</tspan></text>
+  </g>
 </svg>

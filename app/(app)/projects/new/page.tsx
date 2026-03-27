@@ -15,6 +15,7 @@ import { SubmitButton } from "@/components/ui/submit-button"
 import { createProject } from "@/lib/data/projects"
 import { clientAuth, clientDb, firebaseClientApp } from "@/lib/firebase/client"
 import { compareISODates, toISODateLocal } from "@/lib/dates/localDate"
+import { parseLocalizedAmount } from "@/lib/format/numericInput"
 import { DatePickerField } from "@/components/ui/date-picker-field"
 import { cn } from "@/lib/utils"
 
@@ -147,7 +148,7 @@ export default function NewProjectPage() {
         if (typeof v !== "string") return null
         const t = v.trim()
         if (!t) return null
-        const n = Number(t)
+        const n = parseLocalizedAmount(t)
         return Number.isFinite(n) ? n : null
       }
       const toStringOrNull = (v: FormDataEntryValue | null) => {

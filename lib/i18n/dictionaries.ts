@@ -5,7 +5,7 @@ type DeepStrings<T> = {
 }
 
 const enData = {
-  appName: "iTracker",
+  appName: "iTrack",
   common: {
     settings: "Settings",
     language: "Language",
@@ -106,7 +106,11 @@ const enData = {
     paid: "Paid",
     unpaid: "Unpaid",
     growth: "Growth",
-    chartTitle: "Profit trend (last 6 months)",
+    chartTitle: "Profit trend (this month)",
+    chartGrowthFootnote: "This month to date vs the same calendar days last month",
+    chartMonthProfit: "Cumulative net — each day adds (income − expenses)",
+    chartMtd: "Month to date",
+    netProfitDay: "Day net",
   },
   datePicker: {
     placeholder: "Select date",
@@ -120,6 +124,16 @@ const enData = {
     send: "Send",
     thinking: "Thinking...",
     error: "Something went wrong. Please try again.",
+  },
+  search: {
+    title: "Smart search",
+    placeholder: "Search projects, customers, pages, transactions…",
+    empty: "No matches. Try another keyword.",
+    shortcutHint: "Shortcuts: ⌘K · Ctrl+K",
+    groupNav: "Pages",
+    groupProjects: "Projects",
+    groupCustomers: "Customers",
+    groupTransactions: "Transactions",
   },
   projects: {
     title: "Projects",
@@ -193,6 +207,8 @@ const enData = {
     startDate: "Start date",
     expectedEndDate: "Expected end date",
     status: "Status",
+    statusChangeHint: "Set project status",
+    statusUpdateFailed: "Could not update status. Try again.",
     notes: "Notes",
     demoDisclaimer: "Demo numbers for now (UI only).",
     notFoundTitle: "Project not found",
@@ -200,6 +216,8 @@ const enData = {
     viewAll: "Back to projects",
     expenseDetails: "Expense details",
     incomeDetails: "Income details",
+    financialsOnlyHint: "Record income and expenses under Financials for this project.",
+    openFinancials: "Open financials",
   },
   transactions: {
     expenses: "Expenses",
@@ -220,6 +238,29 @@ const enData = {
     save: "Save",
     saving: "Saving…",
   },
+  account: {
+    dataTitle: "Data & account",
+    exportJson: "Export backup (JSON)",
+    exportHint: "Download all projects, customers, and transactions.",
+    copyJson: "Copy data to clipboard",
+    copied: "Copied.",
+    exportError: "Could not export data.",
+    revokeAll: "Sign out everywhere",
+    revokeHint: "Ends every session on all devices. You will need to sign in again here too.",
+    revokeUnavailable:
+      "This action needs the server env FIREBASE_SERVICE_ACCOUNT_JSON (Firebase service account JSON).",
+    revokeError: "Could not sign out other sessions.",
+    deleteAccount: "Delete account",
+    deleteHint: "Permanently deletes your Firestore data and removes your login.",
+    deleteConfirm:
+      "This permanently deletes all your projects, customers, transactions, and your account. Continue?",
+    deleteTypeWord: "Type DELETE in the box to confirm.",
+    deleteButton: "Delete my account permanently",
+    deleting: "Deleting…",
+    deleteError: "Could not delete the account.",
+    deleteNeedsRecentLogin: "Sign out, sign in again, then retry account deletion.",
+    working: "Working…",
+  },
 } as const
 
 export type Dictionary = DeepStrings<typeof enData>
@@ -227,7 +268,7 @@ export type Dictionary = DeepStrings<typeof enData>
 export const en: Dictionary = enData
 
 export const ar: Dictionary = {
-  appName: "iTracker",
+  appName: "iTrack",
   common: {
     settings: "الإعدادات",
     language: "اللغة",
@@ -328,7 +369,11 @@ export const ar: Dictionary = {
     paid: "تم سداده",
     unpaid: "غير مسدد",
     growth: "النمو",
-    chartTitle: "اتجاه الربح (آخر ٦ أشهر)",
+    chartTitle: "اتجاه الربح (الشهر الحالي)",
+    chartGrowthFootnote: "من بداية هذا الشهر حتى اليوم مقارنةً بنفس الأيام من الشهر الماضي",
+    chartMonthProfit: "صافٍ تراكمي — كل يوم يُضاف إليه (الإيرادات − المصروفات)",
+    chartMtd: "من بداية الشهر",
+    netProfitDay: "صافي اليوم",
   },
   datePicker: {
     placeholder: "اختر التاريخ",
@@ -342,6 +387,16 @@ export const ar: Dictionary = {
     send: "إرسال",
     thinking: "جاري التفكير...",
     error: "حدث خطأ. حاول مرة أخرى.",
+  },
+  search: {
+    title: "بحث ذكي",
+    placeholder: "ابحث عن مشاريع، عملاء، صفحات، معاملات…",
+    empty: "لا توجد نتائج. جرّب كلمة أخرى.",
+    shortcutHint: "اختصارات: ⌘K · Ctrl+K",
+    groupNav: "الصفحات",
+    groupProjects: "المشاريع",
+    groupCustomers: "العملاء",
+    groupTransactions: "المعاملات",
   },
   projects: {
     title: "المشاريع",
@@ -415,6 +470,8 @@ export const ar: Dictionary = {
     startDate: "تاريخ البداية",
     expectedEndDate: "تاريخ الانتهاء المتوقع",
     status: "الحالة",
+    statusChangeHint: "تعيين حالة المشروع",
+    statusUpdateFailed: "تعذر تحديث الحالة. حاول مرة أخرى.",
     notes: "ملاحظات",
     demoDisclaimer: "أرقام تجريبية حالياً (واجهة فقط).",
     notFoundTitle: "المشروع غير موجود",
@@ -422,6 +479,8 @@ export const ar: Dictionary = {
     viewAll: "الرجوع للمشاريع",
     expenseDetails: "تفاصيل المصروفات",
     incomeDetails: "تفاصيل الإيرادات",
+    financialsOnlyHint: "أدخل الإيرادات والمصروفات من قسم الماليات لهذا المشروع.",
+    openFinancials: "فتح الماليات",
   },
   transactions: {
     expenses: "المصروفات",
@@ -441,6 +500,29 @@ export const ar: Dictionary = {
     collectedAtStartNote: "من بيانات المشروع (الحقل الاختياري)",
     save: "حفظ",
     saving: "جاري الحفظ…",
+  },
+  account: {
+    dataTitle: "البيانات والحساب",
+    exportJson: "تصدير نسخة احتياطية (JSON)",
+    exportHint: "تنزيل المشاريع والعملاء والمعاملات المالية.",
+    copyJson: "نسخ البيانات للحافظة",
+    copied: "تم النسخ.",
+    exportError: "تعذر تصدير البيانات.",
+    revokeAll: "تسجيل الخروج من جميع الأجهزة",
+    revokeHint: "إنهاء كل الجلسات على كل الأجهزة، بما فيها هذا الجهاز (ستحتاج لتسجيل الدخول من جديد).",
+    revokeUnavailable:
+      "يتطلب هذا الإجراء ضبط المتغير FIREBASE_SERVICE_ACCOUNT_JSON على الخادم (مفتاح حساب الخدمة من Firebase).",
+    revokeError: "تعذر إنهاء الجلسات.",
+    deleteAccount: "حذف الحساب",
+    deleteHint: "حذف نهائي لبياناتك من قاعدة البيانات وإزالة حساب تسجيل الدخول.",
+    deleteConfirm:
+      "سيتم حذف جميع مشاريعك وعملاءك ومعاملاتك وحسابك نهائياً. هل تريد المتابعة؟",
+    deleteTypeWord: "اكتب كلمة DELETE في المربع للتأكيد.",
+    deleteButton: "حذف حسابي نهائياً",
+    deleting: "جاري الحذف…",
+    deleteError: "تعذر حذف الحساب.",
+    deleteNeedsRecentLogin: "سجّل الخروج ثم الدخول من جديد، ثم أعد محاولة حذف الحساب.",
+    working: "جاري التنفيذ…",
   },
 }
 

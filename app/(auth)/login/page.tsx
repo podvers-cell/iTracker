@@ -11,7 +11,6 @@ import {
 } from "firebase/auth"
 import { Eye, EyeOff } from "lucide-react"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -30,6 +29,14 @@ import { useI18n } from "@/components/i18n/I18nProvider"
 import { clientAuth } from "@/lib/firebase/client"
 import { SubmitButton } from "@/components/ui/submit-button"
 import { useAuth } from "@/components/auth/AuthProvider"
+import { SplashStyleBackdrop, SplashStyleLogoHero } from "@/components/shell/splash-shared"
+import {
+  authGlassInputClass,
+  authGlassLabelClass,
+  authGlassSeparatorClass,
+  authGlassShellClass,
+} from "@/components/auth/authGlassClasses"
+import { cn } from "@/lib/utils"
 
 export default function LoginPage() {
   const { dict } = useI18n()
@@ -136,25 +143,33 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-[100svh] items-center justify-center bg-muted/30 px-4 py-10">
-      <div className="absolute left-4 top-[max(1rem,env(safe-area-inset-top))] z-10 sm:left-6">
-        <LanguageSwitcher iconOnly />
-      </div>
-      <div className="w-full max-w-md space-y-4">
-        <div className="flex justify-center">
-          <img src="/logo.svg" alt={dict.appName} className="size-40 rounded-3xl" />
+    <div className="relative flex min-h-[100svh] items-center justify-center overflow-hidden px-4 py-7 sm:py-8">
+      <SplashStyleBackdrop />
+      <div className="absolute left-4 top-[max(1rem,env(safe-area-inset-top))] z-20 sm:left-6">
+        <div className="rounded-full border border-white/20 bg-white/15 p-0.5 shadow-lg backdrop-blur-md">
+          <LanguageSwitcher iconOnly />
         </div>
+      </div>
+      <div className="relative z-10 w-full max-w-md space-y-4">
+        <div className={cn(authGlassShellClass, "px-5 py-5 sm:px-6 sm:py-6")}>
+          <div className="flex flex-col items-center gap-2 pb-4">
+            <SplashStyleLogoHero alt={dict.appName} />
+            <h1 className="text-center text-2xl font-bold tracking-tight text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.2)] sm:text-3xl">
+              {dict.appName}
+            </h1>
+          </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold tracking-tight">{dict.login.title}</CardTitle>
-            <p className="text-sm leading-relaxed text-muted-foreground">{dict.login.subtitle}</p>
-          </CardHeader>
-          <CardContent className="space-y-5">
+          <div className="space-y-4 border-t border-white/20 pt-5">
+            <div className="space-y-1">
+              <h2 className="text-lg font-semibold tracking-tight text-white sm:text-xl">{dict.login.title}</h2>
+              <p className="text-sm leading-relaxed text-white/75">{dict.login.subtitle}</p>
+            </div>
+
+            <div className="space-y-4">
             <Button
               type="button"
               variant="outline"
-              className="h-11 w-full gap-3 border-border/80 bg-background text-base font-medium shadow-sm hover:bg-muted/50"
+              className="h-11 w-full gap-3 rounded-full border-white/35 bg-white/10 text-base font-medium text-white shadow-none backdrop-blur-sm hover:bg-white/20 hover:text-white"
               disabled={busy}
               onClick={() => void onGoogleSignIn()}
             >
@@ -163,22 +178,24 @@ export default function LoginPage() {
             </Button>
 
             {error ? (
-              <div className="text-sm text-destructive" role="alert">
+              <div className="text-sm font-medium text-red-200" role="alert">
                 {error}
               </div>
             ) : null}
 
             <div className="relative flex items-center py-1">
-              <Separator className="flex-1" />
-              <span className="bg-card px-3 text-xs font-medium text-muted-foreground">
+              <Separator className={cn("flex-1", authGlassSeparatorClass)} />
+              <span className="px-3 text-xs font-medium text-white/65">
                 {dict.login.orContinueWithEmail}
               </span>
-              <Separator className="flex-1" />
+              <Separator className={cn("flex-1", authGlassSeparatorClass)} />
             </div>
 
-            <form onSubmit={onSubmit} className="space-y-5">
+            <form onSubmit={onSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">{dict.login.email}</Label>
+                <Label htmlFor="email" className={authGlassLabelClass}>
+                  {dict.login.email}
+                </Label>
                 <Input
                   id="email"
                   type="email"
@@ -187,10 +204,13 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder={dict.login.emailPlaceholder}
                   disabled={busy}
+                  className={authGlassInputClass}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">{dict.login.password}</Label>
+                <Label htmlFor="password" className={authGlassLabelClass}>
+                  {dict.login.password}
+                </Label>
                 <div className="relative">
                   <Input
                     id="password"
@@ -199,14 +219,14 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder={dict.login.passwordPlaceholder}
-                    className="pe-12"
+                    className={cn("pe-12", authGlassInputClass)}
                     disabled={busy}
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon-sm"
-                    className="absolute end-1.5 top-1/2 -translate-y-1/2 rounded-xl text-muted-foreground hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+                    className="absolute end-1.5 top-1/2 -translate-y-1/2 rounded-xl text-white/70 hover:bg-white/15 hover:text-white disabled:pointer-events-none disabled:opacity-40"
                     onClick={() => setShowPassword((v) => !v)}
                     aria-label={showPassword ? dict.login.hidePassword : dict.login.showPassword}
                     aria-pressed={showPassword}
@@ -219,7 +239,7 @@ export default function LoginPage() {
                   <Button
                     type="button"
                     variant="link"
-                    className="h-auto px-0 py-0 text-sm font-medium text-primary"
+                    className="h-auto px-0 py-0 text-sm font-medium text-cyan-100/95 underline-offset-4 hover:text-white hover:no-underline"
                     disabled={busy}
                     onClick={openPasswordReset}
                   >
@@ -227,19 +247,26 @@ export default function LoginPage() {
                   </Button>
                 </div>
                 {dict.login.hint ? (
-                  <div className="text-xs text-muted-foreground">{dict.login.hint}</div>
+                  <div className="text-xs text-white/55">{dict.login.hint}</div>
                 ) : null}
               </div>
 
-              <SubmitButton className="h-11 w-full text-base" disabled={googleLoading}>
+              <SubmitButton
+                className="h-11 w-full rounded-full border border-white/40 bg-gradient-to-r from-white via-violet-50 to-cyan-100 text-base font-semibold text-violet-900 shadow-lg hover:brightness-105 disabled:opacity-60"
+                disabled={googleLoading}
+              >
                 {submitting ? "..." : dict.login.submit}
               </SubmitButton>
             </form>
-          </CardContent>
-        </Card>
+            </div>
+          </div>
+        </div>
 
-        <p className="text-center text-sm text-muted-foreground">
-          <Link href="/register" className="font-medium text-primary underline-offset-4 hover:underline">
+        <p className="text-center text-sm text-white/85">
+          <Link
+            href="/register"
+            className="font-semibold text-white underline-offset-4 hover:underline"
+          >
             {dict.login.createAccount}
           </Link>
         </p>

@@ -16,6 +16,7 @@ import { SubmitButton } from "@/components/ui/submit-button"
 import { ProjectPicker } from "@/components/projects/ProjectPicker"
 import { CollectedAtStartRow } from "@/components/projects/CollectedAtStartRow"
 import { formatMoney } from "@/lib/format/money"
+import { parseLocalizedAmount } from "@/lib/format/numericInput"
 
 export default function FinancialsPage() {
   const { dict, locale } = useI18n()
@@ -98,7 +99,7 @@ export default function FinancialsPage() {
     try {
       const fd = new FormData(form)
       const amountStr = String(fd.get("amount") || "").trim()
-      const amount = Number(amountStr.replaceAll(",", "").replaceAll("٬", "").replaceAll("٫", "."))
+      const amount = parseLocalizedAmount(amountStr)
       const category = String(fd.get("category") || "").trim()
       const description = String(fd.get("description") || "").trim()
       const date = String(fd.get("date") || "").trim()

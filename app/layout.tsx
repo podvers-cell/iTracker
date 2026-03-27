@@ -7,13 +7,13 @@ import { RegisterServiceWorker } from "@/components/pwa/RegisterServiceWorker";
 import { SplashScreen } from "@/components/shell/SplashScreen";
 
 export const metadata: Metadata = {
-  title: "iTracker",
+  title: "iTrack",
   description: "Simple finishing tracker",
   manifest: "/manifest.json",
-  applicationName: "iTracker",
+  applicationName: "iTrack",
   appleWebApp: {
     capable: true,
-    title: "iTracker",
+    title: "iTrack",
     statusBarStyle: "default",
   },
   formatDetection: {

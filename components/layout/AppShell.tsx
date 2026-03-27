@@ -9,9 +9,8 @@ import {
   FolderKanban,
   Users,
   Wallet,
-  Sparkles,
-  X,
   Settings,
+  Search,
 } from "lucide-react"
 
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher"
@@ -27,13 +26,64 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { Separator } from "@/components/ui/separator"
-import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
-import type { Project } from "@/lib/data/projects"
-import type { Transaction } from "@/lib/data/transactions"
 import { useProjects } from "@/components/projects/useProjects"
 import { useAllTransactions } from "@/components/projects/useAllTransactions"
+import { useCustomers } from "@/components/customers/useCustomers"
+import { SmartSearchPalette, SmartSearchTrigger } from "@/components/search/SmartSearchPalette"
 import { DeadlineNotificationsButton } from "@/components/notifications/DeadlineNotificationsButton"
+import { AppLogo } from "@/components/branding/AppLogo"
+import { SplashStyleBackdrop } from "@/components/shell/splash-shared"
+import { AccountDataSection } from "@/components/account/AccountDataSection"
+
+/** Glass circular actions on the purple mobile header (ticket-app style). */
+const MOBILE_TOP_GLASS_BTN =
+  "size-10 min-h-10 min-w-10 rounded-full border border-white/35 bg-white/15 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-md hover:bg-white/25 hover:text-white focus-visible:border-white/50 focus-visible:ring-2 focus-visible:ring-white/40 [&_svg]:text-white"
+
+function UserAvatar({
+  photoUrl,
+  label,
+  className,
+  sizeClassName = "size-10",
+}: {
+  photoUrl?: string | null
+  label: string
+  className?: string
+  /** e.g. size-12 for settings header */
+  sizeClassName?: string
+}) {
+  const [broken, setBroken] = React.useState(false)
+  const initial = (label.trim().charAt(0) || "?").toUpperCase()
+
+  const ring = "shrink-0 rounded-full object-cover ring-2 ring-violet-200/70"
+
+  if (photoUrl && !broken) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- Firestore/OAuth URLs; avoids remotePatterns config
+      <img
+        src={photoUrl}
+        alt=""
+        width={48}
+        height={48}
+        className={cn(ring, sizeClassName, className)}
+        onError={() => setBroken(true)}
+      />
+    )
+  }
+
+  return (
+    <div
+      className={cn(
+        "grid shrink-0 place-items-center rounded-full bg-violet-100 text-sm font-semibold text-violet-800 ring-2 ring-violet-200/70",
+        sizeClassName,
+        className
+      )}
+      aria-hidden
+    >
+      {initial}
+    </div>
+  )
+}
 
 type NavItem = {
   href: string
@@ -83,10 +133,10 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             href={item.href}
             onClick={onNavigate}
             className={cn(
-              "flex items-center gap-2 rounded-2xl px-4 py-3 text-sm transition-all duration-200",
+              "flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200",
               active
-                ? "bg-sidebar-accent text-sidebar-accent-foreground ring-1 ring-primary/35"
-                : "text-sidebar-foreground hover:bg-sidebar-accent/70"
+                ? "bg-gradient-to-r from-violet-200/80 to-purple-100/90 text-violet-950 shadow-sm ring-1 ring-violet-300/60"
+                : "text-sidebar-foreground hover:bg-white/55 hover:ring-1 hover:ring-violet-200/50"
             )}
           >
             {item.icon}
@@ -98,52 +148,52 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   )
 }
 
-function MobileSettingsSheet({ userLabel }: { userLabel: string }) {
+function MobileSettingsSheet({
+  userLabel,
+  photoUrl,
+  triggerClassName,
+}: {
+  userLabel: string
+  photoUrl?: string | null
+  triggerClassName?: string
+}) {
   const { dict, locale, setLocale } = useI18n()
   const [open, setOpen] = React.useState(false)
 
   return (
     <>
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size={triggerClassName ? "icon-lg" : "icon-sm"}
+        className={cn("shrink-0 rounded-xl", triggerClassName)}
         onClick={() => setOpen(true)}
         aria-label={dict.common.settings}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className={cn(
-          "group relative grid size-12 shrink-0 place-items-center overflow-hidden rounded-full border shadow-lg",
-          "border-border/50 bg-background/75 backdrop-blur-xl backdrop-saturate-150",
-          "text-primary transition-all duration-300 ease-out",
-          "active:scale-[0.97]",
-          "hover:border-primary/35 hover:bg-background/85 hover:shadow-xl hover:shadow-primary/10",
-          open && "border-primary/45 ring-2 ring-primary/25 shadow-primary/15"
-        )}
       >
-        <span
-          className={cn(
-            "absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent opacity-80 transition-opacity group-hover:opacity-100",
-            open && "from-primary/30"
-          )}
-          aria-hidden
-        />
         <Settings
-          className={cn(
-            "relative size-5 transition-transform duration-300 ease-out",
-            "group-hover:rotate-90 group-active:scale-95",
-            open && "rotate-45"
-          )}
+          className={triggerClassName ? "size-[1.125rem]" : "size-4"}
           strokeWidth={2}
           aria-hidden
         />
-      </button>
+      </Button>
 
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="center" className="gap-0 p-0 sm:w-full" showCloseButton>
+        <SheetContent
+          side="left"
+          swipeFromLeft
+          className="gap-0 overflow-hidden rounded-r-[1.875rem] border-e border-border/50 p-0 shadow-2xl sm:max-w-sm sm:rounded-r-[2.125rem]"
+          showCloseButton
+        >
           <SheetHeader className="border-b px-6 py-4 text-start">
             <SheetTitle className="text-start">{dict.common.welcome}</SheetTitle>
-            <SheetDescription className="text-start text-base font-semibold text-foreground">
-              {userLabel}
-            </SheetDescription>
+            <div className="mt-2 flex items-center gap-3">
+              <UserAvatar photoUrl={photoUrl} label={userLabel} sizeClassName="size-12 text-lg" />
+              <SheetDescription className="m-0 flex-1 text-start text-base font-semibold text-foreground">
+                {userLabel}
+              </SheetDescription>
+            </div>
           </SheetHeader>
           <div className="space-y-6 px-6 py-5">
             <div className="space-y-3">
@@ -174,6 +224,8 @@ function MobileSettingsSheet({ userLabel }: { userLabel: string }) {
               </div>
             </div>
             <Separator />
+            <AccountDataSection onAfterClose={() => setOpen(false)} />
+            <Separator />
             <LogoutButton className="h-11 w-full justify-center" />
           </div>
         </SheetContent>
@@ -203,26 +255,64 @@ function MobileBottomNav() {
     return pathname === href
   }
 
+  /* Bottom bar: dir rtl keeps the same physical tab order for ar & en (dashboard next to the logo side). */
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 md:hidden">
-      <div className="mx-auto max-w-3xl px-4 pb-[max(env(safe-area-inset-bottom),12px)]">
-        <div className="hud-surface border border-border/70 bg-card/95 px-2 py-2 shadow-[0_10px_30px_rgba(15,23,42,0.12)]">
-          <div className="grid grid-cols-5 gap-1">
+    <nav className="fixed inset-x-0 bottom-0 z-20 md:hidden" dir="rtl">
+      <div className="mx-auto max-w-3xl px-4 pb-[max(env(safe-area-inset-bottom),14px)]">
+        <div className="rounded-full border border-violet-200/70 bg-white/95 px-1.5 pb-1.5 pt-3 shadow-[0_12px_44px_rgba(91,33,182,0.2)] backdrop-blur-xl">
+          <div className="grid w-full grid-cols-5 items-end gap-0.5">
             {items.map((item) => {
               const active = isActive(item.href)
+              const isNewProject = item.href === "/projects/new"
+
+              if (isNewProject) {
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="group relative z-10 -mt-11 flex flex-col items-center gap-2 pb-0.5"
+                  >
+                    <span
+                      className={cn(
+                        "grid size-[3.25rem] place-items-center rounded-full text-white shadow-[0_8px_24px_rgba(109,40,217,0.45)] ring-4 ring-white/90 transition-transform duration-200 active:scale-[0.96]",
+                        active
+                          ? "bg-gradient-to-br from-violet-600 to-purple-700"
+                          : "bg-gradient-to-br from-violet-500 to-purple-600 group-hover:from-violet-600 group-hover:to-purple-700"
+                      )}
+                    >
+                      <Plus className="size-7 shrink-0 stroke-[2.5]" aria-hidden />
+                    </span>
+                    <span
+                      className={cn(
+                        "max-w-[4.5rem] px-0.5 text-center text-[9px] font-semibold leading-snug text-balance",
+                        active ? "text-violet-700" : "text-zinc-500 group-hover:text-violet-600"
+                      )}
+                    >
+                      {item.label}
+                    </span>
+                  </Link>
+                )
+              }
+
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-[11px] leading-none transition-colors",
+                    "flex flex-col items-center justify-center gap-0.5 rounded-full px-1 py-2 text-[10px] leading-none font-medium transition-all duration-200",
                     active
-                      ? "bg-muted text-foreground ring-1 ring-primary/30"
-                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                      ? "bg-gradient-to-b from-violet-100 to-violet-50 text-violet-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]"
+                      : "text-zinc-400 hover:text-violet-600"
                   )}
                 >
-                  {item.icon}
-                  <span className="font-medium">{item.label}</span>
+                  {React.cloneElement(item.icon as React.ReactElement<{ className?: string }>, {
+                    className: cn(
+                      (item.icon as React.ReactElement<{ className?: string }>).props.className,
+                      "size-5 shrink-0",
+                      active ? "text-violet-600" : "text-current"
+                    ),
+                  })}
+                  <span className="max-w-full truncate px-0.5">{item.label}</span>
                 </Link>
               )
             })}
@@ -233,203 +323,24 @@ function MobileBottomNav() {
   )
 }
 
-type ChatMsg = { role: "user" | "assistant"; text: string }
-
-function FloatingAssistantButton({
-  projects,
-  transactions,
-}: {
-  projects: Project[]
-  transactions: Transaction[]
-}) {
-  const { dict, locale } = useI18n()
-  const { user } = useAuth()
-  const [open, setOpen] = React.useState(false)
-  const [loading, setLoading] = React.useState(false)
-  const [text, setText] = React.useState("")
-  const [messages, setMessages] = React.useState<ChatMsg[]>([
-    {
-      role: "assistant",
-      text:
-        locale === "ar"
-          ? "مرحبًا، أنا المساعد الذكي. كيف أقدر أساعدك اليوم؟"
-          : "Hi, I'm your AI assistant. How can I help today?",
-    },
-  ])
-
-  const context = React.useMemo(() => {
-    const income = transactions.filter((t) => t.type === "income").reduce((a, t) => a + t.amount, 0)
-    const expense = transactions.filter((t) => t.type === "expense").reduce((a, t) => a + t.amount, 0)
-    const byStatus = projects.reduce(
-      (acc, p) => {
-        acc[p.status] = (acc[p.status] ?? 0) + 1
-        return acc
-      },
-      {} as Record<string, number>
-    )
-    return {
-      locale,
-      totals: { totalIncomeAED: income, totalExpensesAED: expense, netProfitAED: income - expense },
-      counts: { projects: projects.length, transactions: transactions.length, byStatus },
-    }
-  }, [locale, projects, transactions])
-
-  const send = React.useCallback(async () => {
-    const q = text.trim()
-    if (!q || loading) return
-    setLoading(true)
-    setText("")
-    setMessages((m) => [...m, { role: "user", text: q }])
-    try {
-      const idToken = user ? await user.getIdToken() : null
-      if (!idToken) throw new Error("Not authenticated")
-
-      const res = await fetch("/api/ai", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({ message: q, locale, context }),
-      })
-
-      const data = (await res.json()) as { text?: string; error?: string }
-      if (!res.ok) throw new Error(data?.error || `Request failed (${res.status})`)
-      setMessages((m) => [...m, { role: "assistant", text: data.text || "" }])
-    } catch (e) {
-      console.error("[assistant-widget] error", e)
-      setMessages((m) => [
-        ...m,
-        { role: "assistant", text: dict.assistant.error },
-      ])
-    } finally {
-      setLoading(false)
-    }
-  }, [text, loading, user, locale, context, dict.assistant.error])
-
-  return (
-    <>
-      {open ? (
-        <div
-          className={cn(
-            "fixed bottom-24 right-4 z-40 w-[370px] max-w-[calc(100vw-1.25rem)] overflow-hidden rounded-3xl md:bottom-8 md:right-8",
-            "border-2 border-zinc-600 bg-zinc-950 shadow-[0_24px_64px_rgba(0,0,0,0.7)]"
-          )}
-        >
-          <div className="flex items-center justify-between border-b border-zinc-700 bg-zinc-900 px-4 py-3">
-            <div className="flex items-center gap-3">
-              <div className="grid size-9 place-items-center rounded-xl border border-zinc-600 bg-zinc-800">
-                <Sparkles className="size-4 text-amber-300" strokeWidth={2} />
-              </div>
-              <div>
-                <div className="text-sm font-semibold tracking-tight text-zinc-100">
-                  {dict.nav.assistant}
-                </div>
-                <div className="text-[11px] text-zinc-400">{locale === "ar" ? "متصل الآن" : "Online now"}</div>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              aria-label="Close assistant"
-              className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
-            >
-              <X className="size-5" />
-            </button>
-          </div>
-
-          <div className="h-[360px] space-y-3 overflow-y-auto bg-zinc-950 p-4 md:h-[420px]">
-            {messages.map((m, idx) => (
-              <div key={idx} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
-                <div
-                  className={cn(
-                    "max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed",
-                    m.role === "user"
-                      ? "border border-violet-400 bg-violet-600 text-white shadow-md"
-                      : "border border-zinc-600 bg-zinc-800 text-zinc-100 shadow-sm"
-                  )}
-                >
-                  {m.text}
-                </div>
-              </div>
-            ))}
-            {loading ? <div className="text-xs text-zinc-500">{dict.assistant.thinking}</div> : null}
-          </div>
-
-          <div className="border-t border-zinc-700 bg-zinc-900 p-3">
-            <div className="flex items-center gap-2">
-              <Input
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder={dict.assistant.placeholder}
-                disabled={loading}
-                className="h-11 rounded-2xl border-2 border-zinc-600 bg-zinc-950 text-zinc-50 placeholder:text-zinc-500 focus-visible:border-amber-500 focus-visible:ring-2 focus-visible:ring-amber-500/40"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault()
-                    void send()
-                  }
-                }}
-              />
-              <Button
-                size="sm"
-                type="button"
-                onClick={() => void send()}
-                disabled={loading || !text.trim()}
-                className="h-11 shrink-0 rounded-2xl border-2 border-amber-400 bg-amber-500 px-4 font-semibold text-zinc-950 shadow-md hover:bg-amber-400 hover:border-amber-300 disabled:opacity-50"
-              >
-                {dict.assistant.send}
-              </Button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      <div className="group fixed bottom-24 right-4 z-30 md:bottom-8 md:right-8">
-        <div className="relative flex items-center justify-center">
-          {!open ? (
-            <>
-              <span
-                className="assistant-fab-ping pointer-events-none absolute -inset-2 rounded-full bg-black/12 motion-safe:animate-ping motion-safe:[animation-duration:2.2s]"
-                aria-hidden
-              />
-              <span
-                className="assistant-fab-ping pointer-events-none absolute -inset-2 rounded-full bg-black/6 motion-safe:animate-ping motion-safe:[animation-duration:2.2s] motion-safe:[animation-delay:0.8s]"
-                aria-hidden
-              />
-            </>
-          ) : null}
-          <button
-            type="button"
-            aria-label="AI Assistant"
-            onClick={() => setOpen((v) => !v)}
-            className={cn(
-              "relative flex size-[3.75rem] items-center justify-center rounded-full md:size-14",
-              "border-2 border-black bg-zinc-900 text-zinc-100",
-              "transition-all duration-200",
-              "hover:border-zinc-950 hover:bg-zinc-800",
-              "active:scale-[0.96]",
-              !open && "assistant-fab-button"
-            )}
-          >
-            {open ? (
-              <X className="size-6 text-zinc-100" strokeWidth={2.5} />
-            ) : (
-              <Sparkles className="size-7 text-zinc-100" strokeWidth={2.5} />
-            )}
-          </button>
-        </div>
-      </div>
-    </>
-  )
-}
-
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { dict } = useI18n()
   const { user } = useAuth()
   const { projects, loading: projectsLoading } = useProjects()
   const { transactions, loading: txLoading } = useAllTransactions()
+  const { customers } = useCustomers()
+  const [searchOpen, setSearchOpen] = React.useState(false)
   const dataLoading = projectsLoading || txLoading
+
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.key.toLowerCase() !== "k") return
+      e.preventDefault()
+      setSearchOpen(true)
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [])
 
   const userLabel =
     user?.displayName?.trim() ||
@@ -444,16 +355,37 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const sidebar = (
     <aside className="hidden w-80 px-6 py-6 md:block">
-      <div className="hud-surface p-5 bg-sidebar">
+      <div
+        className={cn(
+          "hud-surface p-5",
+          "border-violet-300/55 bg-gradient-to-b from-white/95 via-violet-50/50 to-purple-50/35 backdrop-blur-md",
+          "shadow-[0_20px_56px_-20px_rgba(91,33,182,0.22)]"
+        )}
+      >
         <div className="flex items-center justify-center">
-          <img src="/logo.svg" alt={dict.appName} className="size-36 rounded-3xl" />
+          <AppLogo alt={dict.appName} className="size-36 rounded-3xl shadow-md shadow-violet-900/10" />
         </div>
-        <div className="mt-3 text-center text-sm text-muted-foreground">
-          {dict.common.welcome} <span className="font-medium text-foreground/90">{userLabel}</span>
+        <div className="mt-3 flex items-center justify-center gap-3 text-sm text-muted-foreground">
+          <UserAvatar photoUrl={user?.photoURL} label={userLabel} sizeClassName="size-10" />
+          <span className="min-w-0 text-start">
+            {dict.common.welcome}{" "}
+            <span className="font-medium text-violet-950/90">{userLabel}</span>
+          </span>
         </div>
-        <Separator className="my-4 opacity-50" />
+        <Separator className="my-4 bg-violet-200/50" />
+        <Button
+          type="button"
+          variant="outline"
+          className="mb-3 h-11 w-full justify-start gap-2 rounded-full border-violet-300/70 bg-white/70 shadow-sm backdrop-blur-sm hover:bg-violet-50/90"
+          onClick={() => setSearchOpen(true)}
+        >
+          <Search className="size-4" />
+          {dict.search.title}
+        </Button>
         <SidebarNav />
-        <Separator className="my-4 opacity-50" />
+        <Separator className="my-4 bg-violet-200/50" />
+        <AccountDataSection variant="compact" className="px-0.5" />
+        <Separator className="my-4 bg-violet-200/50" />
         <div className="flex items-center gap-2">
           <LanguageSwitcher />
           <LogoutButton />
@@ -463,36 +395,70 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   )
 
   const content = (
-    <div className="flex min-w-0 flex-1 flex-col">
-      <header className="shrink-0 px-5 pt-[max(0.75rem,env(safe-area-inset-top))] pb-3 md:hidden">
-        <div className="flex min-w-0 items-center justify-between gap-3">
+    <div className="relative isolate flex min-w-0 flex-1 flex-col bg-background">
+      {/*
+        Mobile: purple chrome + SVG wave. Do not pull `main` upward with negative margin — it paints
+        over the wave (z-20 + bg-background) and hides the curve as a flat band. Hero overlap is
+        handled on the dashboard only (--mobile-hero-overlap).
+      */}
+      <header
+        className="relative z-10 shrink-0 overflow-hidden px-4 pb-24 pt-[max(1.125rem,env(safe-area-inset-top))] shadow-[0_10px_36px_-6px_rgba(76,29,149,0.32)] md:hidden"
+        dir="rtl"
+      >
+        <SplashStyleBackdrop className="absolute inset-0" />
+        <div className="relative z-[3] flex min-w-0 w-full items-center justify-between gap-3">
           <Link
             href="/dashboard"
-            className="flex shrink-0 items-center rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2"
+            className="flex shrink-0 items-center rounded-2xl outline-none ring-2 ring-white/35 ring-offset-2 ring-offset-transparent focus-visible:ring-white/60"
           >
-            <img
-              src="/logo.svg"
-              alt={dict.appName}
-              className="size-11 rounded-2xl object-contain"
-            />
+            <AppLogo alt={dict.appName} className="size-11 rounded-2xl shadow-md shadow-black/15" />
           </Link>
-          <div className="flex shrink-0 items-center justify-end gap-2">
-            <DeadlineNotificationsButton {...notifyProps} />
-            <MobileSettingsSheet userLabel={userLabel} />
+          <div className="flex min-w-0 shrink-0 items-center gap-2">
+            <SmartSearchTrigger
+              chrome="mobilePurple"
+              ariaLabel={dict.search.title}
+              onClick={() => setSearchOpen(true)}
+            />
+            <DeadlineNotificationsButton {...notifyProps} className={MOBILE_TOP_GLASS_BTN} />
+            <MobileSettingsSheet
+              userLabel={userLabel}
+              photoUrl={user?.photoURL}
+              triggerClassName={MOBILE_TOP_GLASS_BTN}
+            />
           </div>
         </div>
+        <svg
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-[4.75rem] w-full sm:h-[5.25rem]"
+          viewBox="0 0 1200 88"
+          preserveAspectRatio="none"
+          aria-hidden
+        >
+          {/* Translucent violet layer on chrome */}
+          <path
+            className="fill-violet-200/50"
+            d="M0,40 C168,6 336,70 504,36 C672,8 816,62 984,30 C1060,18 1130,46 1200,36 L1200,88 L0,88 Z"
+          />
+          {/* Wave cap — same token as page bg so no harsh white strip vs lavender */}
+          <path
+            className="fill-background"
+            d="M0,48 C140,14 280,68 420,38 C560,12 700,58 840,32 C960,10 1080,52 1200,42 L1200,88 L0,88 Z"
+          />
+        </svg>
       </header>
       <div className="hidden md:flex justify-start px-5 rtl:justify-end md:px-8 md:pt-6">
-        <DeadlineNotificationsButton {...notifyProps} />
+        <DeadlineNotificationsButton
+          {...notifyProps}
+          className="rounded-full border border-violet-200/70 bg-white/75 shadow-md shadow-violet-900/5 backdrop-blur-sm"
+        />
       </div>
-      <main className="flex flex-1 flex-col px-5 py-6 pb-28 md:px-8 md:pb-0 md:pt-6">
+      <main className="relative z-0 flex max-md:z-[11] flex-1 flex-col bg-background px-5 pb-28 max-md:px-4 max-md:pt-4 md:px-8 md:pb-0 md:pt-6">
         {children}
       </main>
     </div>
   )
 
   return (
-    <div className="min-h-[100svh]">
+    <div className="min-h-[100svh] bg-background">
       <div className="relative flex w-full">
         {/* Keep sidebar first: with dir=rtl it appears right, with dir=ltr it appears left */}
         {sidebar}
@@ -500,7 +466,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <MobileBottomNav />
-      <FloatingAssistantButton projects={projects} transactions={transactions} />
+      <SmartSearchPalette
+        open={searchOpen}
+        onOpenChange={setSearchOpen}
+        projects={projects}
+        customers={customers}
+        transactions={transactions}
+      />
     </div>
   )
 }

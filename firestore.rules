@@ -15,6 +15,9 @@ service cloud.firestore {
       allow read, delete: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
       allow create: if isSignedIn()
         && request.resource.data.ownerUid == request.auth.uid;
+      allow update: if isSignedIn()
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == resource.data.ownerUid;
     }
 
     match /transactions/{transactionId} {
@@ -22,12 +25,21 @@ service cloud.firestore {
       allow create: if isSignedIn()
         && request.resource.data.ownerUid == request.auth.uid
         && ownsProject(request.resource.data.projectId);
+      // Immutable owner/project; only category, amount, description, date, etc. may change.
+      allow update: if isSignedIn()
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && request.resource.data.projectId == resource.data.projectId
+        && ownsProject(resource.data.projectId);
     }
 
     match /customers/{customerId} {
       allow read, delete: if isSignedIn() && resource.data.ownerUid == request.auth.uid;
       allow create: if isSignedIn()
         && request.resource.data.ownerUid == request.auth.uid;
+      allow update: if isSignedIn()
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == resource.data.ownerUid;
     }
 
     match /{document=**} {

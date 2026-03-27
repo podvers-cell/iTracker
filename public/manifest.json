@@ -1,6 +1,6 @@
 {
-  "name": "iTracker",
-  "short_name": "iTracker",
+  "name": "iTrack",
+  "short_name": "iTrack",
   "description": "Simple finishing tracker for projects, customers, and finances.",
   "start_url": "/dashboard",
   "scope": "/",

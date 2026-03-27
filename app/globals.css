@@ -103,39 +103,42 @@
 
 :root {
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  /* Soft dashboard palette (like provided reference). */
-  --background: oklch(0.975 0.008 260);
-  --foreground: oklch(0.22 0.01 260);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.22 0.01 260);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.22 0.01 260);
-  --primary: oklch(0.54 0.09 264);
-  --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.965 0.006 260);
-  --secondary-foreground: oklch(0.28 0.01 260);
-  --muted: oklch(0.965 0.006 260);
-  --muted-foreground: oklch(0.52 0.01 260);
-  --accent: oklch(0.965 0.006 260);
-  --accent-foreground: oklch(0.28 0.01 260);
+  /* Lavender + violet chrome — aligned with splash / auth / mobile shell */
+  --background: oklch(0.965 0.022 290);
+  --foreground: oklch(0.26 0.04 290);
+  --card: oklch(0.997 0.006 290);
+  --card-foreground: oklch(0.26 0.04 290);
+  --popover: oklch(0.995 0.008 290);
+  --popover-foreground: oklch(0.26 0.04 290);
+  --primary: oklch(0.52 0.2 292);
+  --primary-foreground: oklch(0.99 0.01 290);
+  --secondary: oklch(0.945 0.028 292);
+  --secondary-foreground: oklch(0.32 0.06 292);
+  --muted: oklch(0.935 0.026 292);
+  --muted-foreground: oklch(0.5 0.04 292);
+  --accent: oklch(0.93 0.04 300);
+  --accent-foreground: oklch(0.32 0.06 292);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.88 0.008 260);
-  --input: oklch(0.88 0.008 260);
-  --ring: oklch(0.62 0.08 264 / 45%);
+  --border: oklch(0.88 0.05 292);
+  --input: oklch(0.88 0.04 292);
+  --ring: oklch(0.55 0.18 292 / 42%);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0.004 260);
-  --sidebar-foreground: oklch(0.22 0.01 260);
-  --sidebar-primary: oklch(0.54 0.09 264);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.965 0.006 260);
-  --sidebar-accent-foreground: oklch(0.22 0.01 260);
-  --sidebar-border: oklch(0.9 0.008 260);
-  --sidebar-ring: oklch(0.62 0.08 264 / 45%);
+  --radius: 0.75rem;
+  --sidebar: oklch(0.97 0.02 294);
+  --sidebar-foreground: oklch(0.28 0.05 292);
+  --sidebar-primary: oklch(0.52 0.2 292);
+  --sidebar-primary-foreground: oklch(0.99 0.01 290);
+  --sidebar-accent: oklch(0.93 0.05 296);
+  --sidebar-accent-foreground: oklch(0.32 0.07 292);
+  --sidebar-border: oklch(0.86 0.06 294);
+  --sidebar-ring: oklch(0.55 0.18 292 / 42%);
+
+  /* Dashboard hero pull-up on mobile (keep smaller than header safe toolbar height). */
+  --mobile-hero-overlap: 3.5rem;
 }
 
 .dark {
@@ -171,6 +174,8 @@
   --sidebar-accent-foreground: oklch(0.98 0 0);
   --sidebar-border: oklch(1 0.01 255 / 14%);
   --sidebar-ring: oklch(0.92 0 0 / 40%);
+
+  --mobile-hero-overlap: 3rem;
 }
 
 @layer base {
@@ -215,12 +220,13 @@ html[lang="en"] {
 }
 
 @layer base {
-  /* Subtle premium background (less noisy). */
+  /* Wash — same family as SplashStyleBackdrop (soft violet orbs on lavender). */
   body {
+    background-color: var(--background);
     background-image:
-      radial-gradient(1100px circle at 35% 0%, color-mix(in oklch, var(--primary) 14%, transparent), transparent 55%),
-      radial-gradient(900px circle at 85% 20%, color-mix(in oklch, var(--ring) 10%, transparent), transparent 60%),
-      linear-gradient(180deg, color-mix(in oklch, var(--background) 92%, white), var(--background));
+      radial-gradient(1000px circle at 50% -8%, color-mix(in oklch, var(--primary) 16%, transparent), transparent 52%),
+      radial-gradient(780px circle at 100% 35%, color-mix(in oklch, var(--primary) 10%, transparent), transparent 55%),
+      radial-gradient(640px circle at 0% 85%, color-mix(in oklch, oklch(0.72 0.14 230) 8%, transparent), transparent 50%);
     background-attachment: fixed;
   }
 }
@@ -238,11 +244,11 @@ html[lang="en"] {
       0 18px 50px -28px color-mix(in oklch, var(--primary) 18%, transparent);
   }
   .hud-surface {
-    /* Clean surface card (reference-like). */
-    @apply rounded-3xl border border-border bg-card;
+    /* Glass-leaning cards — violet rim + soft purple shadow (splash / auth family). */
+    @apply rounded-[1.25rem] border border-violet-200/55 bg-card/95 backdrop-blur-sm;
     box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.85) inset,
-      0 10px 30px rgba(15, 23, 42, 0.08);
+      0 1px 0 rgba(255, 255, 255, 0.75) inset,
+      0 12px 40px -10px color-mix(in oklch, var(--primary) 16%, transparent);
   }
 
   /* Hover animation (subtle, Apple-like) */
@@ -254,10 +260,10 @@ html[lang="en"] {
   }
 
   .page-title {
-    @apply text-2xl md:text-3xl font-semibold tracking-tight;
+    @apply text-2xl md:text-3xl font-semibold tracking-tight text-foreground;
     text-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.35),
-      0 0 22px color-mix(in oklch, var(--primary) 55%, transparent);
+      0 1px 0 rgba(255, 255, 255, 0.5),
+      0 0 20px color-mix(in oklch, var(--primary) 28%, transparent);
   }
   .page-subtitle {
     @apply text-sm text-muted-foreground;

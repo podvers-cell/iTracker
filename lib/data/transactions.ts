@@ -101,12 +101,13 @@ export async function getTransactionsByProject(
   const uid = requireOwnerUid(ownerUid)
   const db = requireDb()
 
-  // Single-field query avoids a composite index; filter project in memory.
-  const q = query(collection(db, "transactions"), where("ownerUid", "==", uid))
+  const q = query(
+    collection(db, "transactions"),
+    where("ownerUid", "==", uid),
+    where("projectId", "==", projectId)
+  )
   const snap = await getDocs(q)
-  const items = snap.docs
-    .map((d) => normalizeTransaction(d.id, d.data() as TransactionDoc))
-    .filter((t) => t.projectId === projectId)
+  const items = snap.docs.map((d) => normalizeTransaction(d.id, d.data() as TransactionDoc))
 
   items.sort((a, b) => {
     if (a.date !== b.date) return a.date > b.date ? -1 : 1

@@ -8,10 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { LinkButton } from "@/components/ui/link-button"
 import { Button } from "@/components/ui/button"
 import { useProjects } from "@/components/projects/useProjects"
-import { deleteProjectById } from "@/lib/data/projects"
+import { deleteProjectById, type ProjectStatus } from "@/lib/data/projects"
 import { projectCollectedTotal } from "@/lib/data/projectFinance"
 import { useAllTransactions } from "@/components/projects/useAllTransactions"
 import { formatMoney } from "@/lib/format/money"
+import { cn } from "@/lib/utils"
 
 export default function ProjectsPage() {
   const { dict, locale } = useI18n()
@@ -29,6 +30,12 @@ export default function ProjectsPage() {
     }
     return map
   }, [transactions])
+
+  function statusLabel(s: ProjectStatus) {
+    if (s === "active") return dict.projectNew.statusActive
+    if (s === "on_hold") return dict.projectNew.statusOnHold
+    return dict.projectNew.statusCompleted
+  }
 
   async function onDelete(projectId: string) {
     const ok = window.confirm(dict.projects.confirmDelete)
@@ -107,7 +114,7 @@ export default function ProjectsPage() {
                     ) : null}
                   </div>
 
-                  <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2 lg:grid-cols-5">
+                  <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2 lg:grid-cols-6">
                     <div className="rounded-xl border border-border/60 px-3 py-2">
                       <div className="text-muted-foreground">{dict.projects.totalCost}</div>
                       <div className="font-semibold">{formatMoney(totalCost, locale)}</div>
@@ -123,6 +130,19 @@ export default function ProjectsPage() {
                     <div className="rounded-xl border border-border/60 px-3 py-2">
                       <div className="text-muted-foreground">{dict.projects.totalExpenses}</div>
                       <div className="font-semibold text-rose-700">{formatMoney(totalExpenses, locale)}</div>
+                    </div>
+                    <div className="rounded-xl border border-border/60 px-3 py-2">
+                      <div className="text-muted-foreground">{dict.projectDetails.status}</div>
+                      <div
+                        className={cn(
+                          "font-semibold",
+                          p.status === "active" && "text-emerald-700 dark:text-emerald-500",
+                          p.status === "on_hold" && "text-amber-700 dark:text-amber-500",
+                          p.status === "completed" && "text-muted-foreground"
+                        )}
+                      >
+                        {statusLabel(p.status)}
+                      </div>
                     </div>
                     <div className="rounded-xl border border-border/60 px-3 py-2">
                       <div className="flex items-center justify-between text-muted-foreground">

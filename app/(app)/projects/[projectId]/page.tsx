@@ -7,15 +7,12 @@ import { useI18n } from "@/components/i18n/I18nProvider"
 import { useAuth } from "@/components/auth/AuthProvider"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { LinkButton } from "@/components/ui/link-button"
-import { getProjectById, type ProjectStatus } from "@/lib/data/projects"
+import { getProjectById, updateProjectStatus, type ProjectStatus } from "@/lib/data/projects"
 import { projectCollectedTotal, projectUncollected } from "@/lib/data/projectFinance"
-import { addTransaction } from "@/lib/data/transactions"
 import { useTransactions } from "@/components/projects/useTransactions"
 import { CollectedAtStartRow } from "@/components/projects/CollectedAtStartRow"
 import { formatMoney } from "@/lib/format/money"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { SubmitButton } from "@/components/ui/submit-button"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 const MD_UP_QUERY = "(min-width: 768px)"
@@ -100,11 +97,9 @@ export default function ProjectDetailsPage({
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [project, setProject] = React.useState<Awaited<ReturnType<typeof getProjectById>>>(null)
-  const { transactions, loading: txLoading, error: txError, refresh: refreshTx } =
-    useTransactions(projectId)
-  const [savingExpense, setSavingExpense] = React.useState(false)
-  const [savingIncome, setSavingIncome] = React.useState(false)
-  const [formError, setFormError] = React.useState<string | null>(null)
+  const { transactions, loading: txLoading, error: txError } = useTransactions(projectId)
+  const [statusSaving, setStatusSaving] = React.useState(false)
+  const [statusError, setStatusError] = React.useState<string | null>(null)
 
   const totalExpenses = React.useMemo(() => {
     return transactions
@@ -161,86 +156,6 @@ export default function ProjectDetailsPage({
     const days = Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1
     if (locale === "ar") return `${days} ${dict.projectDetails.daysUnitAr}`
     return `${days} ${days === 1 ? dict.projectDetails.dayUnitEn : dict.projectDetails.daysUnitEn}`
-  }
-
-  function parseAmount(raw: string) {
-    return Number(raw.replaceAll(",", "").replaceAll("٬", "").replaceAll("٫", ".").trim())
-  }
-
-  function todayIsoDate() {
-    return new Date().toISOString().slice(0, 10)
-  }
-
-  async function onAddExpense(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    if (!user || savingExpense) return
-
-    const form = e.currentTarget
-    const fd = new FormData(form)
-    const amountStr = String(fd.get("expenseAmount") || "").trim()
-    const amount = parseAmount(amountStr)
-    const description = String(fd.get("expenseDescription") || "").trim()
-    const date = String(fd.get("expenseDate") || "").trim() || todayIsoDate()
-
-    if (!amountStr || !Number.isFinite(amount) || amount <= 0) {
-      setFormError("Invalid amount")
-      return
-    }
-
-    setFormError(null)
-    setSavingExpense(true)
-    try {
-      await addTransaction(user.uid, {
-        projectId,
-        type: "expense",
-        amount,
-        category: dict.nav.expenses,
-        description: description || null,
-        date,
-      })
-      form.reset()
-      await refreshTx()
-    } catch (err: any) {
-      setFormError(err?.message ?? "Failed to add expense")
-    } finally {
-      setSavingExpense(false)
-    }
-  }
-
-  async function onAddIncome(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    if (!user || savingIncome) return
-
-    const form = e.currentTarget
-    const fd = new FormData(form)
-    const amountStr = String(fd.get("incomeAmount") || "").trim()
-    const amount = parseAmount(amountStr)
-    const description = String(fd.get("incomeDescription") || "").trim()
-    const date = String(fd.get("incomeDate") || "").trim() || todayIsoDate()
-
-    if (!amountStr || !Number.isFinite(amount) || amount <= 0) {
-      setFormError("Invalid amount")
-      return
-    }
-
-    setFormError(null)
-    setSavingIncome(true)
-    try {
-      await addTransaction(user.uid, {
-        projectId,
-        type: "income",
-        amount,
-        category: dict.nav.incomes,
-        description: description || null,
-        date,
-      })
-      form.reset()
-      await refreshTx()
-    } catch (err: any) {
-      setFormError(err?.message ?? "Failed to add income")
-    } finally {
-      setSavingIncome(false)
-    }
   }
 
   React.useEffect(() => {
@@ -301,11 +216,30 @@ export default function ProjectDetailsPage({
   }
 
   const projectDuration = calculateProjectDuration(project.startDate, project.expectedEndDate)
+  const projectRow = project
 
   function statusLabel(s: ProjectStatus) {
     if (s === "active") return dict.projectNew.statusActive
     if (s === "on_hold") return dict.projectNew.statusOnHold
     return dict.projectNew.statusCompleted
+  }
+
+  async function handleStatusChange(next: ProjectStatus) {
+    if (!user || next === projectRow.status) return
+    setStatusError(null)
+    setStatusSaving(true)
+    const prev = projectRow.status
+    setProject((p) => (p ? { ...p, status: next } : p))
+    try {
+      await updateProjectStatus(projectId, next)
+    } catch (e: unknown) {
+      setProject((p) => (p ? { ...p, status: prev } : p))
+      const msg =
+        e instanceof Error ? e.message : dict.projectDetails.statusUpdateFailed
+      setStatusError(msg)
+    } finally {
+      setStatusSaving(false)
+    }
   }
 
   function DetailTile({
@@ -408,7 +342,30 @@ export default function ProjectDetailsPage({
               label={dict.projectDetails.duration}
               value={projectDuration ?? dict.projectDetails.notAvailable}
             />
-            <DetailTile label={dict.projectDetails.status} value={statusLabel(project.status)} />
+            <div className="rounded-lg border border-border/60 bg-card px-4 py-3 shadow-sm">
+              <div className="text-sm text-muted-foreground">{dict.projectDetails.status}</div>
+              <p className="sr-only">{dict.projectDetails.statusChangeHint}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {(["active", "on_hold", "completed"] as const).map((s) => (
+                  <Button
+                    key={s}
+                    type="button"
+                    variant={project.status === s ? "default" : "outline"}
+                    size="sm"
+                    className="h-10 shrink-0 rounded-xl text-sm"
+                    disabled={statusSaving || !user}
+                    onClick={() => void handleStatusChange(s)}
+                  >
+                    {statusLabel(s)}
+                  </Button>
+                ))}
+              </div>
+              {statusError ? (
+                <p className="mt-2 text-sm text-destructive" role="alert">
+                  {statusError}
+                </p>
+              ) : null}
+            </div>
             <DetailTile
               label={dict.projectDetails.location}
               value={project.location ?? dict.projectDetails.notAvailable}
@@ -437,56 +394,6 @@ export default function ProjectDetailsPage({
           </div>
         </div>
       </MobileCollapsibleCard>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <MobileCollapsibleCard title={dict.nav.expenses}>
-          <form className="space-y-3" onSubmit={onAddExpense}>
-              <div className="space-y-2">
-                <Label htmlFor="expenseAmount">{dict.transactions.amount}</Label>
-                <Input id="expenseAmount" name="expenseAmount" inputMode="decimal" placeholder="0" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="expenseDescription">{dict.transactions.description}</Label>
-                <Input
-                  id="expenseDescription"
-                  name="expenseDescription"
-                  placeholder={dict.transactions.description}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="expenseDate">{dict.transactions.date}</Label>
-                <Input id="expenseDate" name="expenseDate" type="date" defaultValue={todayIsoDate()} />
-              </div>
-              <SubmitButton className="h-11 w-full text-base" disabled={savingExpense || !user}>
-                {savingExpense ? dict.transactions.saving : dict.transactions.save}
-              </SubmitButton>
-          </form>
-        </MobileCollapsibleCard>
-
-        <MobileCollapsibleCard title={dict.nav.incomes}>
-          <form className="space-y-3" onSubmit={onAddIncome}>
-              <div className="space-y-2">
-                <Label htmlFor="incomeAmount">{dict.transactions.amount}</Label>
-                <Input id="incomeAmount" name="incomeAmount" inputMode="decimal" placeholder="0" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="incomeDescription">{dict.transactions.description}</Label>
-                <Input
-                  id="incomeDescription"
-                  name="incomeDescription"
-                  placeholder={dict.transactions.description}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="incomeDate">{dict.transactions.date}</Label>
-                <Input id="incomeDate" name="incomeDate" type="date" defaultValue={todayIsoDate()} />
-              </div>
-              <SubmitButton className="h-11 w-full text-base" disabled={savingIncome || !user}>
-                {savingIncome ? dict.transactions.saving : dict.transactions.save}
-              </SubmitButton>
-          </form>
-        </MobileCollapsibleCard>
-      </div>
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         <MobileCollapsibleCard title={dict.projectDetails.expenseDetails}>
@@ -557,7 +464,17 @@ export default function ProjectDetailsPage({
         </MobileCollapsibleCard>
       </div>
 
-      {formError ? <div className="text-sm text-destructive">{formError}</div> : null}
+      <Card className="border-border/60">
+        <CardContent className="flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-muted-foreground">{dict.projectDetails.financialsOnlyHint}</p>
+          <LinkButton
+            href={`/financials?projectId=${encodeURIComponent(projectId)}`}
+            className="h-11 shrink-0 text-base"
+          >
+            {dict.projectDetails.openFinancials}
+          </LinkButton>
+        </CardContent>
+      </Card>
     </div>
   )
 }

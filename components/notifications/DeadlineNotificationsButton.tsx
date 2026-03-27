@@ -19,6 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Button } from "@/components/ui/button"
 
 function fillTemplate(
   template: string,
@@ -38,12 +39,7 @@ type BellButtonProps = {
   loading: boolean
 }
 
-function NotificationsBellTrigger({
-  className,
-  open,
-  count,
-  loading,
-}: BellButtonProps) {
+function NotificationsBellTrigger({ className, open, count, loading }: BellButtonProps) {
   const { dict } = useI18n()
 
   return (
@@ -52,37 +48,23 @@ function NotificationsBellTrigger({
       aria-label={dict.notifications.ariaLabel}
       aria-haspopup="menu"
       aria-expanded={open}
-      className={cn(
-        "group relative grid size-12 shrink-0 place-items-center overflow-hidden rounded-full border shadow-lg outline-none",
-        "border-border/50 bg-background/75 backdrop-blur-xl backdrop-saturate-150",
-        "text-primary transition-all duration-300 ease-out",
-        "hover:border-primary/35 hover:bg-background/85 hover:shadow-xl hover:shadow-primary/10",
-        "focus-visible:ring-2 focus-visible:ring-primary/30",
-        "active:scale-[0.97]",
-        open && "border-primary/45 ring-2 ring-primary/25 shadow-primary/15",
-        loading && "pointer-events-none opacity-60",
-        className
-      )}
+      disabled={loading}
+      render={
+        <Button
+          variant="ghost"
+          size={className ? "icon-lg" : "icon-sm"}
+          className={cn("relative shrink-0 rounded-xl", className)}
+        />
+      }
     >
-      <span
-        className={cn(
-          "absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent opacity-80 transition-opacity group-hover:opacity-100",
-          open && "from-primary/30"
-        )}
-        aria-hidden
-      />
       <Bell
-        className={cn(
-          "relative size-5 transition-transform duration-300 ease-out",
-          "group-hover:scale-110 group-active:scale-95",
-          open && "text-primary"
-        )}
+        className={className ? "size-[1.125rem]" : "size-4"}
         strokeWidth={2}
         aria-hidden
       />
       {!loading && count > 0 ? (
         <span
-          className="absolute end-0.5 top-0.5 grid min-w-[1.1rem] place-items-center rounded-full bg-destructive px-1 text-[10px] font-bold leading-none text-destructive-foreground shadow"
+          className="absolute -end-0.5 -top-0.5 grid min-w-[1.1rem] place-items-center rounded-full bg-destructive px-1 text-[10px] font-bold leading-none text-destructive-foreground shadow"
           aria-hidden
         >
           {count > 9 ? "9+" : count}
