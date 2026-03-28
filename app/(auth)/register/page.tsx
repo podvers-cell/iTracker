@@ -83,14 +83,15 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="relative flex min-h-[100svh] items-center justify-center overflow-hidden px-4 py-10">
+    <div className="relative flex min-h-dvh flex-1 flex-col overflow-x-hidden">
       <SplashStyleBackdrop />
-      <div className="absolute left-4 top-[max(1rem,env(safe-area-inset-top))] z-20 sm:left-6">
+      <div className="absolute start-4 top-[max(1rem,env(safe-area-inset-top))] z-30 sm:start-6">
         <div className="rounded-full border border-white/20 bg-white/15 p-0.5 shadow-lg backdrop-blur-md">
           <LanguageSwitcher iconOnly />
         </div>
       </div>
-      <div className="relative z-10 w-full max-w-md space-y-5">
+      <div className="relative z-10 flex w-full flex-1 flex-col items-center justify-center px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(5.75rem,calc(env(safe-area-inset-top)+3.5rem))] sm:px-4 sm:pb-10 sm:pt-8">
+        <div className="w-full max-w-md space-y-5">
         <div className={cn(authGlassShellClass, "px-5 py-7 sm:px-8 sm:py-8")}>
           <div className="flex flex-col items-center gap-3 pb-6">
             <SplashStyleLogoHero alt={dict.appName} />
@@ -202,6 +203,7 @@ export default function RegisterPage() {
             {dict.register.signIn}
           </Link>
         </p>
+        </div>
       </div>
     </div>
   )

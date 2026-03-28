@@ -284,7 +284,7 @@ function MobileBottomNav() {
   const newProjectActive = pathname === "/projects/new"
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-20 bg-background md:hidden">
       <div className="mx-auto max-w-3xl px-4 pb-[max(env(safe-area-inset-bottom),14px)]">
         <div className="relative">
           <Link
@@ -482,8 +482,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   )
 
   return (
-    <div className="min-h-[100svh] bg-background">
-      <div className="relative flex w-full">
+    <div className="flex min-h-dvh w-full flex-col bg-background">
+      <div className="relative flex min-h-0 w-full flex-1">
         {/* Keep sidebar first: with dir=rtl it appears right, with dir=ltr it appears left */}
         {sidebar}
         {content}

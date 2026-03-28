@@ -182,12 +182,19 @@
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
+  /* iOS / PWA: fill viewport; avoid gaps under fixed chrome (prefer dvh over svh). */
   html {
+    min-height: 100%;
+    min-height: -webkit-fill-available;
+    min-height: 100dvh;
     font-family: var(--font-sans);
     color-scheme: light;
+  }
+  body {
+    @apply bg-background text-foreground;
+    min-height: 100%;
+    min-height: -webkit-fill-available;
+    min-height: 100dvh;
   }
   body,
   button,

@@ -57,13 +57,15 @@ export default async function RootLayout({
     <html
       lang={locale}
       dir={dir}
-      className={`${fontClass} min-h-full overflow-x-hidden antialiased hide-scrollbar`}
+      className={`${fontClass} min-h-dvh overflow-x-hidden antialiased hide-scrollbar`}
     >
-      <body className="min-h-full flex flex-col overflow-x-hidden hide-scrollbar">
+      <body className="flex min-h-dvh flex-col overflow-x-hidden hide-scrollbar">
         <RegisterServiceWorker />
         <I18nProvider initialLocale={locale}>
-          <SplashScreen />
-          <AuthProvider>{children}</AuthProvider>
+          <div className="flex min-h-dvh flex-1 flex-col">
+            <SplashScreen />
+            <AuthProvider>{children}</AuthProvider>
+          </div>
         </I18nProvider>
       </body>
     </html>

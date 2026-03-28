@@ -20,7 +20,7 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="flex min-h-[60svh] items-center justify-center text-sm text-muted-foreground">
+      <div className="flex min-h-dvh flex-1 items-center justify-center text-sm text-muted-foreground">
         Loading…
       </div>
     )

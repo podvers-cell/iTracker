@@ -54,7 +54,7 @@ export function SplashScreen() {
       aria-busy={phase === "show"}
       aria-label={locale === "ar" ? "جاري فتح التطبيق" : "Loading app"}
       className={cn(
-        "fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden",
+        "fixed inset-0 z-[9999] flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden",
         "transition-[opacity,transform,filter] ease-[cubic-bezier(0.22,1,0.36,1)]",
         phase === "exit"
           ? "pointer-events-none scale-[1.03] opacity-0 blur-md duration-[720ms]"
