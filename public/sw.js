@@ -1,7 +1,10 @@
 /* eslint-disable no-restricted-globals */
-const VERSION = "itrack-sw-v4"
+const VERSION = "itrack-sw-v5"
 const PRECACHE = [
   "/manifest.json",
+  "/favicon.svg",
+  "/apple-touch-icon.png",
+  "/icons/apple-touch-icon.png",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
   "/gemini-mark.png",

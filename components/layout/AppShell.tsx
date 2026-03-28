@@ -196,10 +196,11 @@ function MobileSettingsSheet({
         <SheetContent
           side="left"
           swipeFromLeft
-          className="gap-0 overflow-hidden rounded-r-[1.875rem] border-e border-border/50 p-0 shadow-2xl sm:max-w-sm sm:rounded-r-[2.125rem]"
+          leftInset
+          className="gap-0 overflow-hidden p-0 shadow-2xl sm:max-w-sm"
           showCloseButton
         >
-          <SheetHeader className="border-b px-6 py-4 text-start">
+          <SheetHeader className="shrink-0 border-b px-6 pb-5 pt-3 text-start pe-14">
             <SheetTitle className="text-start">{dict.common.welcome}</SheetTitle>
             <div className="mt-2 flex items-center gap-3">
               <UserAvatar photoUrl={photoUrl} label={userLabel} sizeClassName="size-12 text-lg" />
@@ -208,7 +209,7 @@ function MobileSettingsSheet({
               </SheetDescription>
             </div>
           </SheetHeader>
-          <div className="space-y-6 px-6 py-5">
+          <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-6 pb-6 pt-4">
             <div className="space-y-3">
               <div className="text-sm font-medium text-foreground">{dict.common.language}</div>
               <div className="grid grid-cols-2 gap-2">
@@ -378,10 +379,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   } as const
 
   const sidebar = (
-    <aside className="hidden w-80 px-6 py-6 md:block">
+    <aside className="hidden w-80 px-6 pb-6 pt-16 md:block md:pt-20">
       <div
         className={cn(
-          "hud-surface p-5",
+          "hud-surface p-5 pt-6",
           "border-violet-300/55 bg-gradient-to-b from-white/95 via-violet-50/50 to-purple-50/35 backdrop-blur-md",
           "shadow-[0_20px_56px_-20px_rgba(91,33,182,0.22)]"
         )}
@@ -400,13 +401,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <Button
           type="button"
           variant="outline"
-          className="mb-3 h-11 w-full justify-start gap-2 rounded-full border-violet-300/70 bg-white/70 shadow-sm backdrop-blur-sm hover:bg-violet-50/90"
+          className="h-11 w-full justify-start gap-2 rounded-full border-violet-300/70 bg-white/70 shadow-sm backdrop-blur-sm hover:bg-violet-50/90"
           onClick={() => setSearchOpen(true)}
         >
           <Search className="size-4" />
           {dict.search.title}
         </Button>
-        <SidebarNav />
+        {/* Nav يبدأ أسفل كتلة الهيدر — مسافة أوضح عن الحافة العلوية */}
+        <div className="mt-14 border-t border-violet-200/60 pt-10">
+          <SidebarNav />
+        </div>
         <Separator className="my-4 bg-violet-200/50" />
         <AccountDataSection variant="compact" className="px-0.5" />
         <Separator className="my-4 bg-violet-200/50" />
@@ -475,7 +479,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           className="rounded-full border border-violet-200/70 bg-white/75 shadow-md shadow-violet-900/5 backdrop-blur-sm"
         />
       </div>
-      <main className="relative z-0 flex max-md:z-[11] flex-1 flex-col bg-background px-5 pb-28 max-md:px-4 max-md:pb-36 max-md:pt-4 md:px-8 md:pb-0 md:pt-6">
+      <main className="relative z-0 flex max-md:z-[11] flex-1 flex-col bg-background px-5 pb-28 max-md:px-4 max-md:pb-36 max-md:pt-10 md:px-8 md:pb-0 md:pt-6">
         {children}
       </main>
     </div>

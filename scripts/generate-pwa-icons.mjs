@@ -1,5 +1,5 @@
 /**
- * Generates 192×192 and 512×512 PNGs from app/icon.svg for the web manifest.
+ * Generates PNGs from app/icon.svg: manifest sizes + iOS home screen (180×180).
  */
 import { mkdir } from "node:fs/promises"
 import { dirname, join } from "node:path"
@@ -14,11 +14,22 @@ const outDir = join(root, "public", "icons")
 
 await mkdir(outDir, { recursive: true })
 
-for (const size of [192, 512]) {
+async function writePng(size, filename) {
   await sharp(svgPath, { density: 300 })
     .resize(size, size, { fit: "cover", position: "centre" })
     .png({ compressionLevel: 9 })
-    .toFile(join(outDir, `icon-${size}.png`))
+    .toFile(join(outDir, filename))
 }
 
-console.log("[pwa] wrote public/icons/icon-192.png and icon-512.png")
+await writePng(180, "apple-touch-icon.png")
+await writePng(192, "icon-192.png")
+await writePng(512, "icon-512.png")
+/* iOS often probes /apple-touch-icon.png at site root when adding to Home Screen */
+await sharp(svgPath, { density: 300 })
+  .resize(180, 180, { fit: "cover", position: "centre" })
+  .png({ compressionLevel: 9 })
+  .toFile(join(root, "public", "apple-touch-icon.png"))
+
+console.log(
+  "[pwa] wrote public/icons/apple-touch-icon.png, icon-192.png, icon-512.png, public/apple-touch-icon.png"
+)
