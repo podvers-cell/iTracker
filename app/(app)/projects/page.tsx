@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { FolderKanban } from "lucide-react"
 
 import { useI18n } from "@/components/i18n/I18nProvider"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,7 +12,7 @@ import { useProjects } from "@/components/projects/useProjects"
 import { deleteProjectById, type ProjectStatus } from "@/lib/data/projects"
 import { projectCollectedTotal } from "@/lib/data/projectFinance"
 import { useAllTransactions } from "@/components/projects/useAllTransactions"
-import { formatMoney } from "@/lib/format/money"
+import { Money } from "@/components/ui/money"
 import { cn } from "@/lib/utils"
 
 export default function ProjectsPage() {
@@ -58,7 +59,10 @@ export default function ProjectsPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold">{dict.projects.title}</h1>
+          <h1 className="flex items-center gap-2 text-2xl font-semibold">
+            <FolderKanban className="size-7 shrink-0 text-violet-600" aria-hidden />
+            {dict.projects.title}
+          </h1>
           <p className="text-sm text-muted-foreground">{dict.projects.listTitle}</p>
         </div>
         <LinkButton href="/projects/new" className="h-11 text-base">
@@ -117,19 +121,27 @@ export default function ProjectsPage() {
                   <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2 lg:grid-cols-6">
                     <div className="rounded-xl border border-border/60 px-3 py-2">
                       <div className="text-muted-foreground">{dict.projects.totalCost}</div>
-                      <div className="font-semibold">{formatMoney(totalCost, locale)}</div>
+                      <div className="font-semibold">
+                        <Money amount={totalCost} locale={locale} />
+                      </div>
                     </div>
                     <div className="rounded-xl border border-border/60 px-3 py-2">
                       <div className="text-muted-foreground">{dict.projects.paid}</div>
-                      <div className="font-semibold text-emerald-700">{formatMoney(paid, locale)}</div>
+                      <div className="font-semibold text-emerald-700">
+                        <Money amount={paid} locale={locale} />
+                      </div>
                     </div>
                     <div className="rounded-xl border border-border/60 px-3 py-2">
                       <div className="text-muted-foreground">{dict.projects.unpaid}</div>
-                      <div className="font-semibold text-amber-700">{formatMoney(unpaid, locale)}</div>
+                      <div className="font-semibold text-amber-700">
+                        <Money amount={unpaid} locale={locale} />
+                      </div>
                     </div>
                     <div className="rounded-xl border border-border/60 px-3 py-2">
                       <div className="text-muted-foreground">{dict.projects.totalExpenses}</div>
-                      <div className="font-semibold text-rose-700">{formatMoney(totalExpenses, locale)}</div>
+                      <div className="font-semibold text-rose-700">
+                        <Money amount={totalExpenses} locale={locale} />
+                      </div>
                     </div>
                     <div className="rounded-xl border border-border/60 px-3 py-2">
                       <div className="text-muted-foreground">{dict.projectDetails.status}</div>

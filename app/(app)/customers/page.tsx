@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Phone, Plus } from "lucide-react"
+import { Phone, Plus, Users } from "lucide-react"
 
 import { useI18n } from "@/components/i18n/I18nProvider"
 import { useAuth } from "@/components/auth/AuthProvider"
@@ -90,7 +90,10 @@ export default function CustomersPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold">{dict.customers.title}</h1>
+          <h1 className="flex items-center gap-2 text-2xl font-semibold">
+            <Users className="size-7 shrink-0 text-violet-600" aria-hidden />
+            {dict.customers.title}
+          </h1>
           <p className="text-sm text-muted-foreground">{dict.customers.subtitle}</p>
         </div>
         <Button

@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore"
 
 import { clientDb } from "@/lib/firebase/client"
+import { firestoreReadWithRetry } from "@/lib/firebase/firestore-read"
 
 export type Customer = {
   id: string
@@ -67,7 +68,7 @@ export async function getCustomers(ownerUid: string): Promise<Customer[]> {
   const uid = requireOwnerUid(ownerUid)
   const db = requireDb()
   const q = query(collection(db, "customers"), where("ownerUid", "==", uid))
-  const snap = await getDocs(q)
+  const snap = await firestoreReadWithRetry(() => getDocs(q), { label: "customers" })
   const items = snap.docs.map((d) => normalizeCustomer(d.id, d.data() as CustomerDoc))
   items.sort((a, b) => {
     const at = a.updatedAt?.getTime() ?? 0

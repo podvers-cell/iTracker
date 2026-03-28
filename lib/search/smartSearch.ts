@@ -1,10 +1,11 @@
 import type { Customer } from "@/lib/data/customers"
+import type { GeneralTask } from "@/lib/data/generalTasks"
 import type { Dictionary } from "@/lib/i18n/dictionaries"
 import type { Project, ProjectStatus } from "@/lib/data/projects"
 import type { Transaction } from "@/lib/data/transactions"
 import { normalizeDigitsToWestern } from "@/lib/format/numericInput"
 
-export type SearchRowGroup = "nav" | "project" | "customer" | "transaction"
+export type SearchRowGroup = "nav" | "project" | "customer" | "transaction" | "task"
 
 export type SearchRow = {
   key: string
@@ -38,6 +39,7 @@ type BuildParams = {
   projects: Project[]
   customers: Customer[]
   transactions: Transaction[]
+  tasks: GeneralTask[]
   dict: Dictionary
 }
 
@@ -46,6 +48,7 @@ export function buildSmartSearchRows({
   projects,
   customers,
   transactions,
+  tasks,
   dict,
 }: BuildParams): SearchRow[] {
   const q = query.trim()
@@ -61,13 +64,18 @@ export function buildSmartSearchRows({
     if (a.date !== b.date) return a.date < b.date ? 1 : -1
     return (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0)
   })
+  const sortedTasks = [...tasks].sort(
+    (a, b) => (b.updatedAt?.getTime() ?? 0) - (a.updatedAt?.getTime() ?? 0)
+  )
 
   const navDefs: { href: string; title: string }[] = [
     { href: "/dashboard", title: dict.nav.dashboard },
     { href: "/projects", title: dict.nav.projects },
     { href: "/projects/new", title: dict.nav.newProject },
     { href: "/customers", title: dict.nav.customers },
+    { href: "/tasks", title: dict.nav.tasks },
     { href: "/financials", title: dict.nav.financials },
+    { href: "/personal-finance", title: dict.nav.personalFinance },
   ]
 
   const rows: SearchRow[] = []
@@ -110,6 +118,20 @@ export function buildSmartSearchRows({
       href: "/customers",
       primary: c.name,
       secondary: c.phone ?? undefined,
+    })
+  }
+
+  const maxTask = q ? 14 : 7
+  for (const tk of sortedTasks) {
+    if (rows.filter((r) => r.group === "task").length >= maxTask) break
+    const hay = [tk.title, tk.notes, tk.dueDate, tk.dueTime, tk.id].filter(Boolean).join(" ")
+    if (!matchesSearch(hay, q)) continue
+    rows.push({
+      key: `task-${tk.id}`,
+      group: "task",
+      href: "/tasks",
+      primary: tk.title,
+      secondary: tk.done ? dict.tasks.doneStatus : undefined,
     })
   }
 

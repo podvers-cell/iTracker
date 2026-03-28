@@ -2,7 +2,17 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { ArrowRightLeft, FolderKanban, LayoutDashboard, Search, Users } from "lucide-react"
+import {
+  ArrowRightLeft,
+  FolderKanban,
+  House,
+  ListTodo,
+  Plus,
+  Search,
+  Users,
+  Wallet,
+  Wallet2,
+} from "lucide-react"
 
 import { useI18n } from "@/components/i18n/I18nProvider"
 import { Button } from "@/components/ui/button"
@@ -18,6 +28,7 @@ import { cn } from "@/lib/utils"
 import type { Project } from "@/lib/data/projects"
 import type { Customer } from "@/lib/data/customers"
 import type { Transaction } from "@/lib/data/transactions"
+import type { GeneralTask } from "@/lib/data/generalTasks"
 import { buildSmartSearchRows, type SearchRow, type SearchRowGroup } from "@/lib/search/smartSearch"
 
 type Props = {
@@ -26,22 +37,48 @@ type Props = {
   projects: Project[]
   customers: Customer[]
   transactions: Transaction[]
+  tasks: GeneralTask[]
+}
+
+const navRowIconClass = "size-4 shrink-0 text-violet-600 opacity-90"
+
+function navPageIcon(href: string) {
+  switch (href) {
+    case "/dashboard":
+      return <House className={navRowIconClass} strokeWidth={2.25} aria-hidden />
+    case "/projects":
+      return <FolderKanban className={navRowIconClass} aria-hidden />
+    case "/projects/new":
+      return <Plus className={navRowIconClass} aria-hidden />
+    case "/customers":
+      return <Users className={navRowIconClass} aria-hidden />
+    case "/tasks":
+      return <ListTodo className={navRowIconClass} strokeWidth={2.25} aria-hidden />
+    case "/financials":
+      return <Wallet className={navRowIconClass} aria-hidden />
+    case "/personal-finance":
+      return <Wallet2 className={navRowIconClass} aria-hidden />
+    default:
+      return <House className={navRowIconClass} strokeWidth={2.25} aria-hidden />
+  }
 }
 
 function groupIcon(g: SearchRowGroup) {
   switch (g) {
     case "nav":
-      return <LayoutDashboard className="size-4 opacity-70" />
+      return <House className="size-4 opacity-70" strokeWidth={2.25} />
     case "project":
       return <FolderKanban className="size-4 opacity-70" />
     case "customer":
       return <Users className="size-4 opacity-70" />
+    case "task":
+      return <ListTodo className="size-4 opacity-70" strokeWidth={2.25} />
     case "transaction":
       return <ArrowRightLeft className="size-4 opacity-70" />
   }
 }
 
-export function SmartSearchPalette({ open, onOpenChange, projects, customers, transactions }: Props) {
+export function SmartSearchPalette({ open, onOpenChange, projects, customers, transactions, tasks }: Props) {
   const { dict, locale } = useI18n()
   const router = useRouter()
   const [q, setQ] = React.useState("")
@@ -61,8 +98,9 @@ export function SmartSearchPalette({ open, onOpenChange, projects, customers, tr
   }, [q])
 
   const rows = React.useMemo(
-    () => buildSmartSearchRows({ query: q, projects, customers, transactions, dict }),
-    [q, projects, customers, transactions, dict]
+    () =>
+      buildSmartSearchRows({ query: q, projects, customers, transactions, tasks, dict }),
+    [q, projects, customers, transactions, tasks, dict]
   )
 
   const safeActive = rows.length === 0 ? 0 : Math.min(active, rows.length - 1)
@@ -71,6 +109,7 @@ export function SmartSearchPalette({ open, onOpenChange, projects, customers, tr
     if (g === "nav") return dict.search.groupNav
     if (g === "project") return dict.search.groupProjects
     if (g === "customer") return dict.search.groupCustomers
+    if (g === "task") return dict.search.groupTasks
     return dict.search.groupTransactions
   }
 
@@ -161,7 +200,9 @@ export function SmartSearchPalette({ open, onOpenChange, projects, customers, tr
                       selected ? "bg-primary/15 text-foreground" : "hover:bg-muted/80"
                     )}
                   >
-                    <span className="mt-0.5 text-muted-foreground">{groupIcon(row.group)}</span>
+                    <span className="mt-0.5 text-muted-foreground">
+                      {row.group === "nav" ? navPageIcon(row.href) : groupIcon(row.group)}
+                    </span>
                     <span className="min-w-0 flex-1">
                       <span className="block font-medium leading-snug">{row.primary}</span>
                       {row.secondary ? (

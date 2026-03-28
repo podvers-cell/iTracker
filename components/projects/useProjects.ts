@@ -11,8 +11,9 @@ export function useProjects() {
   const [projects, setProjects] = React.useState<Project[]>([])
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
+  const latestLoadId = React.useRef(0)
 
-  const refresh = React.useCallback(async () => {
+  const runLoad = React.useCallback(async () => {
     if (authLoading) return
     const uid = user?.uid
     if (!uid) {
@@ -22,21 +23,32 @@ export function useProjects() {
       return
     }
 
+    const id = ++latestLoadId.current
     setLoading(true)
     setError(null)
     try {
       const data = await getProjects(uid)
+      if (latestLoadId.current !== id) return
       setProjects(data)
-    } catch (e: any) {
-      setError(e?.message ?? "Failed to load projects")
+    } catch (e: unknown) {
+      if (latestLoadId.current !== id) return
+      setError(e instanceof Error ? e.message : "Failed to load projects")
     } finally {
-      setLoading(false)
+      if (latestLoadId.current === id) setLoading(false)
     }
   }, [user?.uid, authLoading])
 
   React.useEffect(() => {
-    void refresh()
-  }, [refresh])
+    void runLoad()
+  }, [runLoad])
+
+  React.useEffect(() => {
+    const onOnline = () => void runLoad()
+    window.addEventListener("online", onOnline)
+    return () => window.removeEventListener("online", onOnline)
+  }, [runLoad])
+
+  const refresh = React.useCallback(() => void runLoad(), [runLoad])
 
   return { projects, loading: authLoading || loading, error, refresh }
 }

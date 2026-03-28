@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { ChevronDown } from "lucide-react"
+import { ChevronDown, FolderKanban } from "lucide-react"
 
 import { useI18n } from "@/components/i18n/I18nProvider"
 import { useAuth } from "@/components/auth/AuthProvider"
@@ -11,9 +11,10 @@ import { getProjectById, updateProjectStatus, type ProjectStatus } from "@/lib/d
 import { projectCollectedTotal, projectUncollected } from "@/lib/data/projectFinance"
 import { useTransactions } from "@/components/projects/useTransactions"
 import { CollectedAtStartRow } from "@/components/projects/CollectedAtStartRow"
-import { formatMoney } from "@/lib/format/money"
+import { Money } from "@/components/ui/money"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { formatISODateForDisplay } from "@/lib/dates/localDate"
 
 const MD_UP_QUERY = "(min-width: 768px)"
 
@@ -193,7 +194,10 @@ export default function ProjectDetailsPage({
       <div className="space-y-6">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
-            <h1 className="text-2xl font-semibold">{dict.projectDetails.title}</h1>
+            <h1 className="flex items-center gap-2 text-2xl font-semibold">
+              <FolderKanban className="size-7 shrink-0 text-violet-600" aria-hidden />
+              {dict.projectDetails.title}
+            </h1>
           </div>
           <LinkButton href="/projects" variant="outline" className="h-11 text-base">
             {dict.projectDetails.viewAll}
@@ -270,7 +274,10 @@ export default function ProjectDetailsPage({
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold">{project.name}</h1>
+          <h1 className="flex items-center gap-2 text-2xl font-semibold">
+            <FolderKanban className="size-7 shrink-0 text-violet-600" aria-hidden />
+            <span className="min-w-0 break-words">{project.name}</span>
+          </h1>
           {project.clientName ? (
             <p className="text-sm text-muted-foreground">
               {dict.projects.client}: {project.clientName}
@@ -289,9 +296,11 @@ export default function ProjectDetailsPage({
               {dict.projectDetails.summaryContractTotal}
             </div>
             <div className="mt-1 text-lg font-semibold">
-              {profitSummary.contractTotal != null
-                ? formatMoney(profitSummary.contractTotal, locale)
-                : dict.projectDetails.notAvailable}
+              {profitSummary.contractTotal != null ? (
+                <Money amount={profitSummary.contractTotal} locale={locale} />
+              ) : (
+                dict.projectDetails.notAvailable
+              )}
             </div>
           </div>
           <div className="rounded-lg border bg-card px-4 py-3">
@@ -299,7 +308,7 @@ export default function ProjectDetailsPage({
               {dict.projectDetails.summaryCollected}
             </div>
             <div className="mt-1 text-lg font-semibold text-emerald-700 dark:text-emerald-500">
-              {formatMoney(profitSummary.collected, locale)}
+              <Money amount={profitSummary.collected} locale={locale} />
             </div>
           </div>
           <div className="rounded-lg border bg-card px-4 py-3">
@@ -307,22 +316,26 @@ export default function ProjectDetailsPage({
               {dict.projectDetails.summaryUncollected}
             </div>
             <div className="mt-1 text-lg font-semibold text-amber-700 dark:text-amber-500">
-              {profitSummary.uncollected != null
-                ? formatMoney(profitSummary.uncollected, locale)
-                : dict.projectDetails.notAvailable}
+              {profitSummary.uncollected != null ? (
+                <Money amount={profitSummary.uncollected} locale={locale} />
+              ) : (
+                dict.projectDetails.notAvailable
+              )}
             </div>
           </div>
           <div className="rounded-lg border bg-card px-4 py-3">
             <div className="text-sm text-muted-foreground">{dict.transactions.totalExpenses}</div>
             <div className="mt-1 text-lg font-semibold text-rose-700 dark:text-rose-400">
-              {formatMoney(totalExpenses, locale)}
+              <Money amount={totalExpenses} locale={locale} />
             </div>
           </div>
           <div className="rounded-lg border bg-card px-4 py-3">
             <div className="text-sm text-muted-foreground">
               {dict.projectDetails.summaryNetProfitContract}
             </div>
-            <div className="mt-1 text-lg font-semibold">{formatMoney(profitSummary.contractProfit, locale)}</div>
+            <div className="mt-1 text-lg font-semibold">
+              <Money amount={profitSummary.contractProfit} locale={locale} />
+            </div>
           </div>
         </div>
       </MobileCollapsibleCard>
@@ -333,9 +346,11 @@ export default function ProjectDetailsPage({
             <DetailTile
               label={dict.projectDetails.contractValue}
               value={
-                typeof project.contractValue === "number"
-                  ? formatMoney(project.contractValue, locale)
-                  : dict.projectDetails.notAvailable
+                typeof project.contractValue === "number" ? (
+                  <Money amount={project.contractValue} locale={locale} />
+                ) : (
+                  dict.projectDetails.notAvailable
+                )
               }
             />
             <DetailTile
@@ -372,11 +387,19 @@ export default function ProjectDetailsPage({
             />
             <DetailTile
               label={dict.projectDetails.startDate}
-              value={project.startDate ?? dict.projectDetails.notAvailable}
+              value={
+                project.startDate
+                  ? formatISODateForDisplay(project.startDate, locale)
+                  : dict.projectDetails.notAvailable
+              }
             />
             <DetailTile
               label={dict.projectDetails.expectedEndDate}
-              value={project.expectedEndDate ?? dict.projectDetails.notAvailable}
+              value={
+                project.expectedEndDate
+                  ? formatISODateForDisplay(project.expectedEndDate, locale)
+                  : dict.projectDetails.notAvailable
+              }
             />
           </div>
 
@@ -416,10 +439,12 @@ export default function ProjectDetailsPage({
                       {t.description ? (
                         <div className="mt-1 text-sm text-muted-foreground">{t.description}</div>
                       ) : null}
-                      <div className="mt-1 text-xs text-muted-foreground">{t.date}</div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {formatISODateForDisplay(t.date, locale)}
+                      </div>
                     </div>
                     <div className="shrink-0 text-sm font-semibold text-rose-700 dark:text-rose-400">
-                      {formatMoney(t.amount, locale)}
+                      <Money amount={t.amount} locale={locale} />
                     </div>
                   </div>
                 ))}
@@ -451,10 +476,12 @@ export default function ProjectDetailsPage({
                       {t.description ? (
                         <div className="mt-1 text-sm text-muted-foreground">{t.description}</div>
                       ) : null}
-                      <div className="mt-1 text-xs text-muted-foreground">{t.date}</div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {formatISODateForDisplay(t.date, locale)}
+                      </div>
                     </div>
                     <div className="shrink-0 text-sm font-semibold text-emerald-700 dark:text-emerald-500">
-                      {formatMoney(t.amount, locale)}
+                      <Money amount={t.amount} locale={locale} />
                     </div>
                   </div>
                 ))}

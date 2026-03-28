@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useI18n } from "@/components/i18n/I18nProvider"
-import { formatMoney } from "@/lib/format/money"
+import { Money } from "@/components/ui/money"
 
 export function ProfitSummaryCard({
   incomeTotal,
@@ -26,7 +26,7 @@ export function ProfitSummaryCard({
               {dict.projectDetails.income}
             </div>
             <div className="mt-1 text-lg font-semibold">
-              {formatMoney(incomeTotal, locale)}
+              <Money amount={incomeTotal} locale={locale} />
             </div>
           </div>
           <div className="rounded-lg border bg-card px-4 py-3">
@@ -34,7 +34,7 @@ export function ProfitSummaryCard({
               {dict.projectDetails.expenses}
             </div>
             <div className="mt-1 text-lg font-semibold">
-              {formatMoney(expenseTotal, locale)}
+              <Money amount={expenseTotal} locale={locale} />
             </div>
           </div>
           <div className="rounded-lg border bg-card px-4 py-3">
@@ -42,7 +42,7 @@ export function ProfitSummaryCard({
               {dict.projectDetails.profit}
             </div>
             <div className="mt-1 text-lg font-semibold">
-              {formatMoney(profit, locale)}
+              <Money amount={profit} locale={locale} />
             </div>
           </div>
         </div>

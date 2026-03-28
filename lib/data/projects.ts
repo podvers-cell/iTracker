@@ -12,7 +12,10 @@ import {
   where,
 } from "firebase/firestore"
 
+import { compareISODates, normalizeCalendarDateString, toISODateLocal } from "@/lib/dates/localDate"
+import { DateValidationCode } from "@/lib/validation/dateCodes"
 import { clientDb } from "@/lib/firebase/client"
+import { firestoreReadWithRetry } from "@/lib/firebase/firestore-read"
 
 export type ProjectStatus = "active" | "on_hold" | "completed"
 
@@ -71,16 +74,12 @@ function normalizeProject(id: string, docData: ProjectDoc): Project {
 }
 
 function requireDb() {
-  console.log("[projects:data] requireDb()")
   const db = clientDb()
   if (!db) {
-    console.error("[projects:data] Firebase clientDb() returned null")
     throw new Error(
       "Firebase is not configured. Check NEXT_PUBLIC_FIREBASE_* env vars."
     )
   }
-  const projectId = (db as any)?._databaseId?.projectId ?? (db as any)?.app?.options?.projectId
-  console.log("[projects:data] Firestore db ready", { projectId })
   return db
 }
 
@@ -95,7 +94,7 @@ export async function listProjects(ownerUid: string): Promise<Project[]> {
   const db = requireDb()
   // Single-field equality only (no composite index). Sort in memory.
   const q = query(collection(db, "projects"), where("ownerUid", "==", uid))
-  const snap = await getDocs(q)
+  const snap = await firestoreReadWithRetry(() => getDocs(q), { label: "projects" })
   const items = snap.docs.map((d) => normalizeProject(d.id, d.data() as ProjectDoc))
   items.sort((a, b) => {
     const at = a.updatedAt?.getTime() ?? 0
@@ -108,7 +107,7 @@ export async function listProjects(ownerUid: string): Promise<Project[]> {
 export async function getProject(projectId: string): Promise<Project | null> {
   const db = requireDb()
   const ref = doc(db, "projects", projectId)
-  const snap = await getDoc(ref)
+  const snap = await firestoreReadWithRetry(() => getDoc(ref), { label: "project" })
   if (!snap.exists()) return null
   return normalizeProject(snap.id, snap.data() as ProjectDoc)
 }
@@ -132,6 +131,20 @@ export async function addProject(ownerUid: string, input: CreateProjectInput): P
   const uid = requireOwnerUid(ownerUid)
   try {
     const db = requireDb()
+
+    const today = toISODateLocal(new Date())
+    if (input.startDate?.trim()) {
+      const sd = normalizeCalendarDateString(input.startDate.trim())
+      if (compareISODates(sd, today) < 0) {
+        throw new Error(DateValidationCode.PAST_CALENDAR_DATE)
+      }
+    }
+    if (input.expectedEndDate?.trim()) {
+      const ed = normalizeCalendarDateString(input.expectedEndDate.trim())
+      if (compareISODates(ed, today) < 0) {
+        throw new Error(DateValidationCode.PAST_CALENDAR_DATE)
+      }
+    }
 
     const payload = {
       ownerUid: uid,

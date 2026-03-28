@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useSearchParams, useRouter } from "next/navigation"
+import { Wallet } from "lucide-react"
 
 import { useI18n } from "@/components/i18n/I18nProvider"
 import { useAuth } from "@/components/auth/AuthProvider"
@@ -15,8 +16,11 @@ import { Label } from "@/components/ui/label"
 import { SubmitButton } from "@/components/ui/submit-button"
 import { ProjectPicker } from "@/components/projects/ProjectPicker"
 import { CollectedAtStartRow } from "@/components/projects/CollectedAtStartRow"
-import { formatMoney } from "@/lib/format/money"
+import { Money } from "@/components/ui/money"
 import { parseLocalizedAmount } from "@/lib/format/numericInput"
+import { compareISODates, formatISODateForDisplay, toISODateLocal } from "@/lib/dates/localDate"
+import { DateValidationCode } from "@/lib/validation/dateCodes"
+import { DatePickerField } from "@/components/ui/date-picker-field"
 
 export default function FinancialsPage() {
   const { dict, locale } = useI18n()
@@ -79,6 +83,23 @@ export default function FinancialsPage() {
   const [savingIncome, setSavingIncome] = React.useState(false)
   const [submitError, setSubmitError] = React.useState<string | null>(null)
 
+  const [expenseDate, setExpenseDate] = React.useState(() => toISODateLocal(new Date()))
+  const [incomeDate, setIncomeDate] = React.useState(() => toISODateLocal(new Date()))
+
+  const minSelectableDate = toISODateLocal(new Date())
+
+  React.useLayoutEffect(() => {
+    if (compareISODates(expenseDate, minSelectableDate) < 0) setExpenseDate(minSelectableDate)
+    if (compareISODates(incomeDate, minSelectableDate) < 0) setIncomeDate(minSelectableDate)
+  }, [expenseDate, incomeDate, minSelectableDate])
+
+  React.useEffect(() => {
+    if (!projectId) return
+    const d = toISODateLocal(new Date())
+    setExpenseDate(d)
+    setIncomeDate(d)
+  }, [projectId])
+
   async function onSubmit(e: React.FormEvent<HTMLFormElement>, type: "expense" | "income") {
     e.preventDefault()
     const form = e.currentTarget
@@ -102,7 +123,7 @@ export default function FinancialsPage() {
       const amount = parseLocalizedAmount(amountStr)
       const category = String(fd.get("category") || "").trim()
       const description = String(fd.get("description") || "").trim()
-      const date = String(fd.get("date") || "").trim()
+      const date = type === "expense" ? expenseDate.trim() : incomeDate.trim()
 
       if (!amountStr || !Number.isFinite(amount) || amount <= 0) throw new Error("Invalid amount")
       if (!category) throw new Error("Category is required")
@@ -118,11 +139,19 @@ export default function FinancialsPage() {
       })
 
       form.reset()
+      const nextDay = toISODateLocal(new Date())
+      setExpenseDate(nextDay)
+      setIncomeDate(nextDay)
       await refresh()
       router.replace(`/financials?projectId=${encodeURIComponent(projectId)}`)
     } catch (err: any) {
       console.error("[financials] add failed", err)
-      setSubmitError(err?.message ?? "Failed to save transaction")
+      const m = err?.message
+      setSubmitError(
+        m === DateValidationCode.PAST_CALENDAR_DATE
+          ? dict.common.pastCalendarDateNotAllowed
+          : m ?? "Failed to save transaction"
+      )
     } finally {
       if (type === "expense") setSavingExpense(false)
       if (type === "income") setSavingIncome(false)
@@ -132,7 +161,10 @@ export default function FinancialsPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold">{dict.nav.financials}</h1>
+        <h1 className="flex items-center gap-2 text-2xl font-semibold">
+          <Wallet className="size-7 shrink-0 text-violet-600" aria-hidden />
+          {dict.nav.financials}
+        </h1>
         <p className="text-sm text-muted-foreground">{dict.projects.listTitle}</p>
       </div>
 
@@ -163,9 +195,11 @@ export default function FinancialsPage() {
                   {dict.projectDetails.summaryContractTotal}
                 </div>
                 <div className="mt-1 text-lg font-semibold">
-                  {profitSummary.contractTotal != null
-                    ? formatMoney(profitSummary.contractTotal, locale)
-                    : dict.projectDetails.notAvailable}
+                  {profitSummary.contractTotal != null ? (
+                    <Money amount={profitSummary.contractTotal} locale={locale} />
+                  ) : (
+                    dict.projectDetails.notAvailable
+                  )}
                 </div>
               </div>
               <div className="rounded-lg border bg-card px-4 py-3">
@@ -173,7 +207,7 @@ export default function FinancialsPage() {
                   {dict.projectDetails.summaryCollected}
                 </div>
                 <div className="mt-1 text-lg font-semibold text-emerald-700 dark:text-emerald-500">
-                  {formatMoney(profitSummary.collected, locale)}
+                  <Money amount={profitSummary.collected} locale={locale} />
                 </div>
               </div>
               <div className="rounded-lg border bg-card px-4 py-3">
@@ -181,15 +215,17 @@ export default function FinancialsPage() {
                   {dict.projectDetails.summaryUncollected}
                 </div>
                 <div className="mt-1 text-lg font-semibold text-amber-700 dark:text-amber-500">
-                  {profitSummary.uncollected != null
-                    ? formatMoney(profitSummary.uncollected, locale)
-                    : dict.projectDetails.notAvailable}
+                  {profitSummary.uncollected != null ? (
+                    <Money amount={profitSummary.uncollected} locale={locale} />
+                  ) : (
+                    dict.projectDetails.notAvailable
+                  )}
                 </div>
               </div>
               <div className="rounded-lg border bg-card px-4 py-3">
                 <div className="text-sm text-muted-foreground">{dict.transactions.totalExpenses}</div>
                 <div className="mt-1 text-lg font-semibold text-rose-700 dark:text-rose-400">
-                  {formatMoney(totalExpenses, locale)}
+                  <Money amount={totalExpenses} locale={locale} />
                 </div>
               </div>
               <div className="rounded-lg border bg-card px-4 py-3">
@@ -197,7 +233,7 @@ export default function FinancialsPage() {
                   {dict.projectDetails.summaryNetProfitContract}
                 </div>
                 <div className="mt-1 text-lg font-semibold">
-                  {formatMoney(profitSummary.contractProfit, locale)}
+                  <Money amount={profitSummary.contractProfit} locale={locale} />
                 </div>
               </div>
             </div>
@@ -230,7 +266,13 @@ export default function FinancialsPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="expense-date">{dict.transactions.date}</Label>
-                <Input id="expense-date" name="date" type="date" />
+                <DatePickerField
+                  id="expense-date"
+                  name="date"
+                  minDate={minSelectableDate}
+                  value={expenseDate}
+                  onValueChange={setExpenseDate}
+                />
               </div>
               <SubmitButton className="h-11 w-full text-base" disabled={savingExpense}>
                 {savingExpense ? dict.transactions.saving : dict.transactions.save}
@@ -259,7 +301,13 @@ export default function FinancialsPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="income-date">{dict.transactions.date}</Label>
-                <Input id="income-date" name="date" type="date" />
+                <DatePickerField
+                  id="income-date"
+                  name="date"
+                  minDate={minSelectableDate}
+                  value={incomeDate}
+                  onValueChange={setIncomeDate}
+                />
               </div>
               <SubmitButton className="h-11 w-full text-base" disabled={savingIncome}>
                 {savingIncome ? dict.transactions.saving : dict.transactions.save}
@@ -297,10 +345,12 @@ export default function FinancialsPage() {
                       {t.description ? (
                         <div className="mt-1 text-sm text-muted-foreground">{t.description}</div>
                       ) : null}
-                      <div className="mt-1 text-xs text-muted-foreground">{t.date}</div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {formatISODateForDisplay(t.date, locale)}
+                      </div>
                     </div>
                     <div className="shrink-0 text-sm font-semibold text-rose-700 dark:text-rose-400">
-                      {formatMoney(t.amount, locale)}
+                      <Money amount={t.amount} locale={locale} />
                     </div>
                   </div>
                 ))}
@@ -337,10 +387,12 @@ export default function FinancialsPage() {
                       {t.description ? (
                         <div className="mt-1 text-sm text-muted-foreground">{t.description}</div>
                       ) : null}
-                      <div className="mt-1 text-xs text-muted-foreground">{t.date}</div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {formatISODateForDisplay(t.date, locale)}
+                      </div>
                     </div>
                     <div className="shrink-0 text-sm font-semibold text-emerald-700 dark:text-emerald-500">
-                      {formatMoney(t.amount, locale)}
+                      <Money amount={t.amount} locale={locale} />
                     </div>
                   </div>
                 ))}

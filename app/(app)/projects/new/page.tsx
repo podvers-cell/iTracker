@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { useRouter } from "next/navigation"
-import { ChevronDown } from "lucide-react"
+import { ChevronDown, FolderPlus } from "lucide-react"
 
 import { useI18n } from "@/components/i18n/I18nProvider"
 import { useAuth } from "@/components/auth/AuthProvider"
@@ -15,6 +15,7 @@ import { SubmitButton } from "@/components/ui/submit-button"
 import { createProject } from "@/lib/data/projects"
 import { clientAuth, clientDb, firebaseClientApp } from "@/lib/firebase/client"
 import { compareISODates, toISODateLocal } from "@/lib/dates/localDate"
+import { DateValidationCode } from "@/lib/validation/dateCodes"
 import { parseLocalizedAmount } from "@/lib/format/numericInput"
 import { DatePickerField } from "@/components/ui/date-picker-field"
 import { cn } from "@/lib/utils"
@@ -31,7 +32,7 @@ export default function NewProjectPage() {
   const statusRef = React.useRef<HTMLDivElement | null>(null)
   const rtl = locale === "ar"
 
-  const todayIso = React.useMemo(() => toISODateLocal(new Date()), [])
+  const todayIso = toISODateLocal(new Date())
   const [startDate, setStartDate] = React.useState("")
   const [endDate, setEndDate] = React.useState("")
   const endMinDate = React.useMemo(() => {
@@ -189,7 +190,9 @@ export default function NewProjectPage() {
       const msg =
         e?.code === "permission-denied"
           ? "Firestore: permission-denied (check rules/admin UID)"
-          : e?.message ?? "Failed to create project"
+          : e?.message === DateValidationCode.PAST_CALENDAR_DATE
+            ? dict.common.pastCalendarDateNotAllowed
+            : e?.message ?? "Failed to create project"
       setError(msg)
     } finally {
       console.log("[projects/new] submit finally: resetting loading")
@@ -201,7 +204,10 @@ export default function NewProjectPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
-          <h1 className="text-2xl font-semibold">{dict.projectNew.title}</h1>
+          <h1 className="flex items-center gap-2 text-2xl font-semibold">
+            <FolderPlus className="size-7 shrink-0 text-violet-600" aria-hidden />
+            {dict.projectNew.title}
+          </h1>
           <p className="text-sm text-muted-foreground">{dict.projectNew.helper}</p>
         </div>
         <LinkButton href="/projects" variant="outline" className="h-11 text-base">

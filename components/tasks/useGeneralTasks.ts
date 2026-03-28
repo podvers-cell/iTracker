@@ -3,14 +3,12 @@
 import * as React from "react"
 
 import { useAuth } from "@/components/auth/AuthProvider"
-import type { Transaction } from "@/lib/data/transactions"
-import { getTransactionsByProject } from "@/lib/data/transactions"
+import type { GeneralTask } from "@/lib/data/generalTasks"
+import { getGeneralTasks } from "@/lib/data/generalTasks"
 
-const NO_PROJECT = "__none__"
-
-export function useTransactions(projectId: string) {
+export function useGeneralTasks() {
   const { user, loading: authLoading } = useAuth()
-  const [transactions, setTransactions] = React.useState<Transaction[]>([])
+  const [tasks, setTasks] = React.useState<GeneralTask[]>([])
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const latestLoadId = React.useRef(0)
@@ -18,8 +16,8 @@ export function useTransactions(projectId: string) {
   const runLoad = React.useCallback(async () => {
     if (authLoading) return
     const uid = user?.uid
-    if (!uid || !projectId || projectId === NO_PROJECT) {
-      setTransactions([])
+    if (!uid) {
+      setTasks([])
       setLoading(false)
       setError(null)
       return
@@ -29,16 +27,16 @@ export function useTransactions(projectId: string) {
     setLoading(true)
     setError(null)
     try {
-      const data = await getTransactionsByProject(uid, projectId)
+      const data = await getGeneralTasks(uid)
       if (latestLoadId.current !== id) return
-      setTransactions(data)
+      setTasks(data)
     } catch (e: unknown) {
       if (latestLoadId.current !== id) return
-      setError(e instanceof Error ? e.message : "Failed to load transactions")
+      setError(e instanceof Error ? e.message : "Failed to load tasks")
     } finally {
       if (latestLoadId.current === id) setLoading(false)
     }
-  }, [projectId, user?.uid, authLoading])
+  }, [user?.uid, authLoading])
 
   React.useEffect(() => {
     void runLoad()
@@ -52,5 +50,5 @@ export function useTransactions(projectId: string) {
 
   const refresh = React.useCallback(() => void runLoad(), [runLoad])
 
-  return { transactions, loading: authLoading || loading, error, refresh }
+  return { tasks, loading: authLoading || loading, error, refresh }
 }

@@ -1,6 +1,11 @@
 import { FirebaseApp, getApps, initializeApp } from "firebase/app"
 import { getAuth } from "firebase/auth"
-import { initializeFirestore, setLogLevel } from "firebase/firestore"
+import {
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+  setLogLevel,
+} from "firebase/firestore"
 
 function getClientConfig() {
   const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY
@@ -48,7 +53,9 @@ export function clientDb() {
   // Helpful for debugging + environments where WebChannel is blocked.
   setLogLevel(process.env.NODE_ENV === "development" ? "debug" : "error")
   _db = initializeFirestore(app, {
-    // Force long polling to avoid WebChannel hangs in some environments.
+    // IndexedDB cache: faster repeat loads + offline resilience (multi-tab sync).
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+    // Long polling avoids WebChannel hangs behind some proxies / antivirus.
     experimentalForceLongPolling: true,
   })
   return _db

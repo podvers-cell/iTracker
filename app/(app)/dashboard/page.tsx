@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   ClipboardList,
   Clock3,
+  House,
   PauseCircle,
   Wallet,
   ArrowDownCircle,
@@ -19,8 +20,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { LinkButton } from "@/components/ui/link-button"
 import { useProjects } from "@/components/projects/useProjects"
 import { useAllTransactions } from "@/components/projects/useAllTransactions"
-import { formatMoney } from "@/lib/format/money"
+import { Money } from "@/components/ui/money"
 import { projectCollectedTotal } from "@/lib/data/projectFinance"
+import { normalizeCalendarDateString, toISODateLocal } from "@/lib/dates/localDate"
 import { cn } from "@/lib/utils"
 
 function sum(nums: number[]) {
@@ -32,25 +34,173 @@ function startOfMonth(d: Date) {
 }
 
 function parseLocalYmd(dateStr: string) {
-  const [y, m, d] = dateStr.split("-").map((v) => Number(v))
-  return new Date(y, (m ?? 1) - 1, d ?? 1)
+  const core = normalizeCalendarDateString(dateStr)
+  const parts = core.split("-")
+  const y = Number(parts[0])
+  const m = Number(parts[1])
+  const d = Number(parts[2])
+  return new Date(y, m - 1, d)
 }
 
-function formatDayTitle(dateStr: string, locale: string) {
-  const d = parseLocalYmd(dateStr)
-  return new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(d)
-}
-
-function formatAxisTick(n: number, locale: string) {
-  try {
-    return new Intl.NumberFormat(locale, {
-      notation: "compact",
-      compactDisplay: "short",
-      maximumFractionDigits: Math.abs(n) >= 1000 ? 0 : 1,
-    }).format(n)
-  } catch {
-    return String(Math.round(n))
+/** Calendar day to attribute “collected at project start” for cash-flow rows. */
+function collectedAtStartDayKey(p: { startDate: string | null; createdAt: Date | null }): string | null {
+  if (p.startDate?.trim()) {
+    return normalizeCalendarDateString(p.startDate)
   }
+  if (p.createdAt) {
+    return toISODateLocal(p.createdAt)
+  }
+  return null
+}
+
+type CashFlowGranularity = "month" | "quarter" | "year"
+
+const CASH_FLOW_MONTH_COUNT = 12
+const CASH_FLOW_QUARTER_COUNT = 8
+const CASH_FLOW_YEAR_COUNT = 5
+
+/** Do not list periods before this month (inclusive). Matches reporting start March 2026. */
+const CASH_FLOW_EARLIEST_YEAR = 2026
+const CASH_FLOW_EARLIEST_MONTH = 3
+
+function compareYearMonth(y1: number, m1: number, y2: number, m2: number): number {
+  if (y1 !== y2) return y1 - y2
+  return m1 - m2
+}
+
+function quarterEndDate(y: number, q: 1 | 2 | 3 | 4): Date {
+  const d = new Date(y, q * 3, 0)
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+const cashFlowEarliestMonthStart = new Date(
+  CASH_FLOW_EARLIEST_YEAR,
+  CASH_FLOW_EARLIEST_MONTH - 1,
+  1
+)
+cashFlowEarliestMonthStart.setHours(0, 0, 0, 0)
+
+function monthKeysFlooredRolling(anchor: Date, n: number): string[] {
+  const endY = anchor.getFullYear()
+  const endM = anchor.getMonth() + 1
+  if (compareYearMonth(endY, endM, CASH_FLOW_EARLIEST_YEAR, CASH_FLOW_EARLIEST_MONTH) < 0) {
+    return []
+  }
+  let startY = endY
+  let startM = endM
+  for (let step = 0; step < n - 1; step++) {
+    startM -= 1
+    if (startM < 1) {
+      startM = 12
+      startY -= 1
+    }
+  }
+  if (compareYearMonth(startY, startM, CASH_FLOW_EARLIEST_YEAR, CASH_FLOW_EARLIEST_MONTH) < 0) {
+    startY = CASH_FLOW_EARLIEST_YEAR
+    startM = CASH_FLOW_EARLIEST_MONTH
+  }
+  if (compareYearMonth(endY, endM, startY, startM) < 0) return []
+
+  const keys: string[] = []
+  let cy = startY
+  let cm = startM
+  while (compareYearMonth(cy, cm, endY, endM) <= 0) {
+    keys.push(`${cy}-${String(cm).padStart(2, "0")}`)
+    cm += 1
+    if (cm > 12) {
+      cm = 1
+      cy += 1
+    }
+  }
+  return keys
+}
+
+function quarterKeysFlooredFromAnchor(anchor: Date, maxCount: number): string[] {
+  let cy = anchor.getFullYear()
+  let cq = Math.floor(anchor.getMonth() / 3) + 1
+  const keys: string[] = []
+  for (let i = 0; i < maxCount; i++) {
+    const q = cq as 1 | 2 | 3 | 4
+    const end = quarterEndDate(cy, q)
+    if (end < cashFlowEarliestMonthStart) break
+    keys.unshift(`${cy}-Q${cq}`)
+    cq -= 1
+    if (cq < 1) {
+      cq = 4
+      cy -= 1
+    }
+  }
+  return keys
+}
+
+function yearKeysFlooredFromAnchor(anchor: Date, count: number): string[] {
+  const endY = anchor.getFullYear()
+  if (endY < CASH_FLOW_EARLIEST_YEAR) return []
+  const startY = Math.max(CASH_FLOW_EARLIEST_YEAR, endY - (count - 1))
+  return Array.from({ length: endY - startY + 1 }, (_, i) => String(startY + i))
+}
+
+function ymdPartsFromIso(iso: string): { y: number; m: number } | null {
+  const n = normalizeCalendarDateString(iso)
+  const m = /^(\d{4})-(\d{2})-\d{2}$/.exec(n)
+  if (!m) return null
+  return { y: Number(m[1]), m: Number(m[2]) }
+}
+
+function bucketKeyFromYmd(y: number, month: number, mode: CashFlowGranularity): string {
+  if (mode === "year") return String(y)
+  if (mode === "month") return `${y}-${String(month).padStart(2, "0")}`
+  const q = Math.floor((month - 1) / 3) + 1
+  return `${y}-Q${q}`
+}
+
+function bucketKeyFromIso(iso: string, mode: CashFlowGranularity): string | null {
+  const ymd = ymdPartsFromIso(iso)
+  if (!ymd) return null
+  return bucketKeyFromYmd(ymd.y, ymd.m, mode)
+}
+
+function periodKeysForGranularity(mode: CashFlowGranularity, anchor: Date): string[] {
+  if (mode === "year") {
+    return yearKeysFlooredFromAnchor(anchor, CASH_FLOW_YEAR_COUNT)
+  }
+  if (mode === "month") {
+    return monthKeysFlooredRolling(anchor, CASH_FLOW_MONTH_COUNT)
+  }
+  return quarterKeysFlooredFromAnchor(anchor, CASH_FLOW_QUARTER_COUNT)
+}
+
+function formatCashFlowPeriodLabel(key: string, mode: CashFlowGranularity, locale: string): string {
+  if (mode === "year") return key
+  if (mode === "month") {
+    const parts = key.split("-")
+    const yi = Number(parts[0])
+    const mi = Number(parts[1])
+    if (!Number.isFinite(yi) || !Number.isFinite(mi)) return key
+    const d = new Date(yi, mi - 1, 1)
+    return new Intl.DateTimeFormat(locale === "ar" ? "ar" : "en", {
+      month: "short",
+      year: "numeric",
+    }).format(d)
+  }
+  const mq = /^(\d{4})-Q([1-4])$/.exec(key)
+  if (!mq) return key
+  if (locale === "ar") {
+    return `${mq[1]} ر${mq[2]}`
+  }
+  return `${mq[1]} Q${mq[2]}`
+}
+
+function formatCashFlowRangeLine(
+  keys: string[],
+  mode: CashFlowGranularity,
+  locale: string
+): string {
+  if (keys.length === 0) return ""
+  const a = formatCashFlowPeriodLabel(keys[0], mode, locale)
+  const b = formatCashFlowPeriodLabel(keys[keys.length - 1], mode, locale)
+  return `${a} — ${b}`
 }
 
 type StatTone = "sky" | "amber" | "emerald" | "rose" | "violet" | "red"
@@ -105,7 +255,7 @@ const STAT_TONE: Record<
 
 type StatCardProps = {
   title: string
-  value: string | number
+  value: React.ReactNode
   icon: LucideIcon
   tone: StatTone
   className?: string
@@ -114,19 +264,52 @@ type StatCardProps = {
 function StatCard({ title, value, icon: Icon, tone, className }: StatCardProps) {
   const t = STAT_TONE[tone]
   return (
-    <Card className={cn("max-md:rounded-[1.25rem] md:shadow-sm", t.card, className)}>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between gap-3">
-          <CardTitle className={cn("text-sm font-medium", t.title)}>{title}</CardTitle>
-          <div className={cn("grid size-9 place-items-center rounded-xl", t.icon)}>
-            <Icon className="size-4" />
+    <div className="flex w-full min-w-0 flex-col items-center gap-3 md:contents">
+      <Card className={cn(t.card, "w-full max-md:rounded-2xl md:shadow-sm", className)}>
+        {/* Mobile: icon + value only; label sits under the card */}
+        <div className="flex flex-col items-center gap-2 px-0.5 py-3 text-center md:hidden">
+          <div
+            className={cn(
+              "grid size-11 shrink-0 place-items-center rounded-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]",
+              t.icon
+            )}
+          >
+            <Icon className="size-[1.35rem]" strokeWidth={2} />
           </div>
+          <p
+            className={cn(
+              "max-w-full break-words text-lg font-bold tabular-nums leading-tight tracking-tight",
+              t.value
+            )}
+          >
+            {value}
+          </p>
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className={cn("stat-number", t.value)}>{value}</div>
-      </CardContent>
-    </Card>
+
+        {/* md+: classic row layout */}
+        <div className="hidden md:block">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between gap-3">
+              <CardTitle className={cn("text-sm font-medium", t.title)}>{title}</CardTitle>
+              <div className={cn("grid size-9 place-items-center rounded-xl", t.icon)}>
+                <Icon className="size-4" />
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className={cn("stat-number", t.value)}>{value}</div>
+          </CardContent>
+        </div>
+      </Card>
+      <p
+        className={cn(
+          "line-clamp-2 w-full px-0.5 text-center text-[10px] font-semibold leading-tight md:hidden",
+          t.title
+        )}
+      >
+        {title}
+      </p>
+    </div>
   )
 }
 
@@ -140,13 +323,14 @@ export default function DashboardPage() {
   } = useAllTransactions()
 
   const now = new Date()
+  const cashFlowCalendarMonthKey = `${now.getFullYear()}-${now.getMonth()}`
+  const [cashFlowGranularity, setCashFlowGranularity] = React.useState<CashFlowGranularity>("month")
 
   const totalProjects = projects.length
   const activeCount = projects.filter((p) => p.status === "active").length
   const completedCount = projects.filter((p) => p.status === "completed").length
   const onHoldCount = projects.filter((p) => p.status === "on_hold").length
 
-  const totalIncome = sum(transactions.filter((t) => t.type === "income").map((t) => t.amount))
   const totalExpenses = sum(transactions.filter((t) => t.type === "expense").map((t) => t.amount))
   const totalContract = sum(
     projects.map((p) => (typeof p.contractValue === "number" ? p.contractValue : 0))
@@ -196,232 +380,88 @@ export default function DashboardPage() {
 
   const growthDisplay = (() => {
     if (periodProfit === 0 && prevProfit === 0) return "—"
-    if (prevProfit === 0) return periodProfit === 0 ? "—" : `+${formatMoney(periodProfit, locale)}`
+    if (prevProfit === 0) {
+      if (periodProfit === 0) return "—"
+      return (
+        <span className="inline-flex items-center gap-0.5">
+          +<Money amount={periodProfit} locale={locale} />
+        </span>
+      )
+    }
     const pct = growthPercent ?? 0
     return `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`
   })()
 
-  const y = now.getFullYear()
-  const mIdx = now.getMonth()
-  const dayKeys = Array.from({ length: todayDay }, (_, i) => {
-    const day = i + 1
-    return `${y}-${String(mIdx + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`
-  })
+  const cashFlowPeriodKeys = React.useMemo(() => {
+    const anchor = new Date()
+    anchor.setHours(0, 0, 0, 0)
+    return periodKeysForGranularity(cashFlowGranularity, anchor)
+  }, [cashFlowCalendarMonthKey, cashFlowGranularity])
 
-  let cumulativeRun = 0
-  const series = dayKeys.map((dk) => {
-    const income = transactions
-      .filter((t) => t.type === "income" && t.date === dk)
-      .reduce((a, b) => a + b.amount, 0)
-    const expense = transactions
-      .filter((t) => t.type === "expense" && t.date === dk)
-      .reduce((a, b) => a + b.amount, 0)
-    const profit = income - expense
-    cumulativeRun += profit
-    return { day: dk, income, expense, profit, cumulative: cumulativeRun }
-  })
+  const cashFlowRangeLabel = React.useMemo(
+    () => formatCashFlowRangeLine(cashFlowPeriodKeys, cashFlowGranularity, locale),
+    [cashFlowPeriodKeys, cashFlowGranularity, locale]
+  )
 
-  const Chart = () => {
-    const [activeIndex, setActiveIndex] = React.useState<number | null>(null)
+  const { series, monthMtdIncome, monthMtdExpense, monthMtdNet, runningEnd, cashFlowHasActivity } =
+    React.useMemo(() => {
+      const periodSet = new Set(cashFlowPeriodKeys)
+      const byBucket = new Map<string, { income: number; expense: number }>()
+      for (const pk of cashFlowPeriodKeys) {
+        byBucket.set(pk, { income: 0, expense: 0 })
+      }
+      for (const t of transactions) {
+        const bk = bucketKeyFromIso(t.date, cashFlowGranularity)
+        if (!bk || !periodSet.has(bk)) continue
+        const cell = byBucket.get(bk)
+        if (!cell) continue
+        if (t.type === "income") cell.income += t.amount
+        else cell.expense += t.amount
+      }
+      for (const p of projects) {
+        const amt = typeof p.collectedAmount === "number" ? p.collectedAmount : 0
+        if (amt <= 0) continue
+        const dk = collectedAtStartDayKey(p)
+        if (!dk) continue
+        const bk = bucketKeyFromIso(dk, cashFlowGranularity)
+        if (!bk || !periodSet.has(bk)) continue
+        const cell = byBucket.get(bk)
+        if (!cell) continue
+        cell.income += amt
+      }
+      let cumulativeRun = 0
+      const seriesInner = cashFlowPeriodKeys.map((pk) => {
+        const { income, expense } = byBucket.get(pk) ?? { income: 0, expense: 0 }
+        const profit = income - expense
+        cumulativeRun += profit
+        return {
+          periodKey: pk,
+          label: formatCashFlowPeriodLabel(pk, cashFlowGranularity, locale),
+          income,
+          expense,
+          profit,
+          cumulative: cumulativeRun,
+        }
+      })
+      const inc = seriesInner.reduce((s, d) => s + d.income, 0)
+      const exp = seriesInner.reduce((s, d) => s + d.expense, 0)
+      return {
+        series: seriesInner,
+        monthMtdIncome: inc,
+        monthMtdExpense: exp,
+        monthMtdNet: inc - exp,
+        runningEnd: seriesInner.length ? seriesInner[seriesInner.length - 1].cumulative : 0,
+        cashFlowHasActivity: inc > 0 || exp > 0,
+      }
+    }, [cashFlowPeriodKeys, transactions, projects, cashFlowGranularity, locale])
 
-    const values = series.map((s) => s.cumulative)
-    const minP = Math.min(...values)
-    const maxP = Math.max(...values)
-    let domainMin = Math.min(minP, 0)
-    let domainMax = Math.max(maxP, 0)
-    let span = domainMax - domainMin
-    if (span === 0) {
-      domainMin -= 1
-      domainMax += 1
-      span = 2
-    }
-    const padFrac = span * 0.1
-    domainMin -= padFrac
-    domainMax += padFrac
-    span = domainMax - domainMin
-
-    const w = 640
-    const h = 210
-    const padL = 54
-    const padR = 12
-    const padT = 8
-    const padB = 30
-    const usableW = w - padL - padR
-    const usableH = h - padT - padB
-    const n = Math.max(1, series.length - 1)
-
-    const yAt = (v: number) => padT + usableH - ((v - domainMin) / span) * usableH
-    const xAt = (i: number) => padL + (usableW / n) * i
-
-    const path = series
-      .map((p, i) => `${i === 0 ? "M" : "L"} ${xAt(i)} ${yAt(p.cumulative)}`)
-      .join(" ")
-
-    const trendUp = (series.at(-1)?.cumulative ?? 0) >= 0
-    const strokeId = trendUp ? "profitStrokeUp" : "profitStrokeDown"
-    const areaId = trendUp ? "profitAreaUp" : "profitAreaDown"
-    const areaPath = `${path} L ${xAt(series.length - 1)} ${padT + usableH} L ${xAt(0)} ${padT + usableH} Z`
-
-    const gridLevels = 4
-    const tickValues = Array.from(
-      { length: gridLevels + 1 },
-      (_, i) => domainMin + (i / gridLevels) * span
-    )
-    const showZeroLine = domainMin < 0 && domainMax > 0
-    const zeroY = yAt(0)
-    const labelStep = Math.max(1, Math.ceil(series.length / 7))
-
-    return (
-      <div dir="ltr" className="w-full">
-        <p className="mb-2 text-xs text-muted-foreground">{dict.dashboard.chartMonthProfit}</p>
-        <svg viewBox={`0 0 ${w} ${h}`} className="h-52 w-full max-w-full">
-          <defs>
-            <linearGradient id="profitStrokeUp" x1="0" x2="1" y1="0" y2="0">
-              <stop offset="0%" stopColor="#16a34a" stopOpacity="0.25" />
-              <stop offset="55%" stopColor="#16a34a" stopOpacity="0.95" />
-              <stop offset="100%" stopColor="#22c55e" stopOpacity="0.4" />
-            </linearGradient>
-            <linearGradient id="profitStrokeDown" x1="0" x2="1" y1="0" y2="0">
-              <stop offset="0%" stopColor="#dc2626" stopOpacity="0.25" />
-              <stop offset="55%" stopColor="#dc2626" stopOpacity="0.95" />
-              <stop offset="100%" stopColor="#ef4444" stopOpacity="0.4" />
-            </linearGradient>
-            <linearGradient id="profitAreaUp" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#22c55e" stopOpacity="0.22" />
-              <stop offset="100%" stopColor="#22c55e" stopOpacity="0.02" />
-            </linearGradient>
-            <linearGradient id="profitAreaDown" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#ef4444" stopOpacity="0.22" />
-              <stop offset="100%" stopColor="#ef4444" stopOpacity="0.02" />
-            </linearGradient>
-          </defs>
-
-          {tickValues.map((tv, gi) => (
-            <g key={`grid-${gi}`}>
-              <line
-                x1={padL}
-                x2={w - padR}
-                y1={yAt(tv)}
-                y2={yAt(tv)}
-                className="stroke-border"
-                strokeOpacity={0.35}
-                strokeWidth={1}
-              />
-              <text
-                x={padL - 8}
-                y={yAt(tv)}
-                dominantBaseline="middle"
-                textAnchor="end"
-                fontSize={10}
-                className="fill-muted-foreground"
-              >
-                {formatAxisTick(tv, locale)}
-              </text>
-            </g>
-          ))}
-
-          {showZeroLine ? (
-            <line
-              x1={padL}
-              x2={w - padR}
-              y1={zeroY}
-              y2={zeroY}
-              className="stroke-foreground"
-              strokeOpacity={0.2}
-              strokeWidth={1}
-              strokeDasharray="5 4"
-            />
-          ) : null}
-
-          <path d={areaPath} fill={`url(#${areaId})`} className="opacity-90" />
-          <path
-            d={path}
-            fill="none"
-            stroke={`url(#${strokeId})`}
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-
-          {series.map((p, i) => {
-            if (i % labelStep === 0 || i === series.length - 1) {
-              const cx = xAt(i)
-              const label = String(parseLocalYmd(p.day).getDate())
-              return (
-                <text
-                  key={`xlab-${p.day}`}
-                  x={cx}
-                  y={h - 8}
-                  textAnchor="middle"
-                  fontSize={9}
-                  className="fill-muted-foreground"
-                >
-                  {label}
-                </text>
-              )
-            }
-            return null
-          })}
-
-          {series.map((p, i) => {
-            const cx = xAt(i)
-            const cy = yAt(p.cumulative)
-            const tipW = 160
-            const tipLine = 14
-            const tipH = 8 + tipLine * 5
-            const margin = 8
-            let tipX = cx - tipW / 2
-            tipX = Math.max(margin, Math.min(tipX, w - tipW - margin))
-            const placeAbove = cy - (tipH + 12) >= margin
-            const tipY = placeAbove ? cy - tipH - 12 : cy + 12
-            const dayTitle = formatDayTitle(p.day, locale)
-
-            return (
-              <g key={p.day}>
-                <circle
-                  cx={cx}
-                  cy={cy}
-                  r={activeIndex === i ? 6.5 : 4}
-                  fill={p.profit >= 0 ? "#16a34a" : "#dc2626"}
-                  opacity={activeIndex == null || activeIndex === i ? 1 : 0.55}
-                  className="cursor-pointer transition-all"
-                  onPointerEnter={() => setActiveIndex(i)}
-                  onPointerLeave={() => setActiveIndex(null)}
-                />
-                {activeIndex === i ? (
-                  <g>
-                    <rect
-                      x={tipX}
-                      y={tipY}
-                      width={tipW}
-                      height={tipH}
-                      rx={10}
-                      fill="rgba(15,23,42,0.92)"
-                    />
-                    <text x={tipX + 10} y={tipY + tipLine} fontSize={10} fontWeight={600} fill="#fafafa">
-                      {dayTitle}
-                    </text>
-                    <text x={tipX + 10} y={tipY + tipLine * 2} fontSize={9} fill="#a1a1aa">
-                      {dict.transactions.income}: {formatMoney(p.income, locale)}
-                    </text>
-                    <text x={tipX + 10} y={tipY + tipLine * 3} fontSize={9} fill="#a1a1aa">
-                      {dict.transactions.expenses}: {formatMoney(p.expense, locale)}
-                    </text>
-                    <text x={tipX + 10} y={tipY + tipLine * 4} fontSize={9} fill="#e4e4e7">
-                      {dict.dashboard.netProfitDay}: {formatMoney(p.profit, locale)}
-                    </text>
-                    <text x={tipX + 10} y={tipY + tipLine * 5} fontSize={9} fill="#a1a1aa">
-                      {dict.dashboard.chartMtd}: {formatMoney(p.cumulative, locale)}
-                    </text>
-                  </g>
-                ) : null}
-              </g>
-            )
-          })}
-        </svg>
-      </div>
-    )
-  }
+  const displaySeries = React.useMemo(
+    () =>
+      [...series]
+        .reverse()
+        .filter((r) => r.income !== 0 || r.expense !== 0),
+    [series]
+  )
 
   return (
     <div className="space-y-6 max-md:space-y-5">
@@ -445,72 +485,339 @@ export default function DashboardPage() {
       </header>
 
       <div className="space-y-1 max-md:pt-1">
-        <h1 className="page-title max-md:text-xl max-md:font-bold max-md:tracking-tight max-md:text-violet-950 max-md:[text-shadow:none]">
+        <h1 className="flex items-center gap-2 page-title max-md:text-xl max-md:font-bold max-md:tracking-tight max-md:text-violet-950 max-md:[text-shadow:none]">
+          <House className="size-7 shrink-0 text-violet-600 max-md:text-violet-600" strokeWidth={2.25} aria-hidden />
           {dict.dashboard.title}
         </h1>
         <p className="page-subtitle max-md:text-zinc-500">{dict.dashboard.overview}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        <StatCard title={dict.dashboard.totalProjects} value={totalProjects} icon={Briefcase} tone="sky" />
-        <StatCard title={dict.dashboard.active} value={activeCount} icon={Clock3} tone="amber" />
+      {loading || txLoading ? (
+        <p role="status" className="text-sm text-muted-foreground" aria-live="polite">
+          {dict.dashboard.loadingDashboard}
+        </p>
+      ) : null}
+
+      <div className="grid grid-cols-4 gap-1.5 sm:gap-2.5">
+        <StatCard
+          title={dict.dashboard.totalProjects}
+          value={loading ? "…" : totalProjects}
+          icon={Briefcase}
+          tone="sky"
+        />
+        <StatCard
+          title={dict.dashboard.active}
+          value={loading ? "…" : activeCount}
+          icon={Clock3}
+          tone="amber"
+        />
         <StatCard
           title={dict.dashboard.completed}
-          value={completedCount}
+          value={loading ? "…" : completedCount}
           icon={CheckCircle2}
           tone="emerald"
         />
-        <StatCard title={dict.dashboard.onHold} value={onHoldCount} icon={PauseCircle} tone="rose" />
+        <StatCard
+          title={dict.dashboard.onHold}
+          value={loading ? "…" : onHoldCount}
+          icon={PauseCircle}
+          tone="rose"
+        />
         <StatCard
           title={dict.dashboard.totalContracts}
-          value={formatMoney(totalContract, locale)}
+          value={
+            loading ? (
+              <span className="inline-block h-7 min-w-[4.5rem] animate-pulse rounded-md bg-muted/80" aria-hidden />
+            ) : (
+              <Money amount={totalContract} locale={locale} />
+            )
+          }
           icon={ClipboardList}
           tone="violet"
         />
         <StatCard
           title={dict.dashboard.totalIncome}
-          value={formatMoney(totalIncome, locale)}
+          value={
+            loading || txLoading ? (
+              <span className="inline-block h-7 min-w-[4.5rem] animate-pulse rounded-md bg-muted/80" aria-hidden />
+            ) : (
+              <Money amount={paid} locale={locale} />
+            )
+          }
           icon={Wallet}
           tone="emerald"
         />
         <StatCard
           title={dict.dashboard.totalExpenses}
-          value={formatMoney(totalExpenses, locale)}
+          value={
+            txLoading ? (
+              <span className="inline-block h-7 min-w-[4.5rem] animate-pulse rounded-md bg-muted/80" aria-hidden />
+            ) : (
+              <Money amount={totalExpenses} locale={locale} />
+            )
+          }
           icon={ArrowDownCircle}
           tone="red"
         />
         <StatCard
           title={dict.dashboard.netProfit}
-          value={formatMoney(netProfit, locale)}
+          value={
+            loading || txLoading ? (
+              <span className="inline-block h-7 min-w-[4.5rem] animate-pulse rounded-md bg-muted/80" aria-hidden />
+            ) : (
+              <Money amount={netProfit} locale={locale} />
+            )
+          }
           icon={HandCoins}
           tone={netProfit >= 0 ? "emerald" : "red"}
         />
       </div>
 
-      <Card className="max-md:rounded-[1.25rem] max-md:border-0 max-md:shadow-[0_10px_32px_rgba(91,33,182,0.12)]">
+      <Card
+        className="max-md:rounded-[1.25rem] max-md:border-0 max-md:shadow-[0_10px_32px_rgba(91,33,182,0.12)]"
+        aria-busy={txLoading}
+      >
         <CardHeader className="pb-3">
           <CardTitle className="text-base">{dict.dashboard.chartTitle}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Chart />
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 text-sm">
-            <div className="flex items-center justify-between rounded-xl border border-border/60 bg-background/10 px-3 py-2">
-              <span className="text-muted-foreground">{dict.dashboard.paid}</span>
-              <span className="font-semibold">{formatMoney(paid, locale)}</span>
-            </div>
-            <div className="flex items-center justify-between rounded-xl border border-border/60 bg-background/10 px-3 py-2">
-              <span className="text-muted-foreground">{dict.dashboard.unpaid}</span>
-              <span className="font-semibold">{formatMoney(unpaid, locale)}</span>
-            </div>
+          {txError ? (
+            <p className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {txError}
+            </p>
+          ) : null}
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+            {!txLoading && cashFlowPeriodKeys.length > 0 ? (
+              <p className="text-xs text-foreground/85" dir={locale === "ar" ? "rtl" : "ltr"}>
+                <span className="font-medium text-muted-foreground">{dict.dashboard.chartDateRangeShown}: </span>
+                {cashFlowRangeLabel}
+              </p>
+            ) : null}
             <div
-              className="flex items-center justify-between gap-2 rounded-xl border border-border/60 bg-background/10 px-3 py-2"
-              title={dict.dashboard.chartGrowthFootnote}
+              className="inline-flex shrink-0 rounded-lg border border-border/80 bg-muted/25 p-0.5"
+              role="group"
+              aria-label={dict.dashboard.chartGranularityGroupAria}
             >
-              <span className="text-muted-foreground">{dict.dashboard.growth}</span>
-              <span className="font-semibold tabular-nums">{growthDisplay}</span>
+              {(
+                [
+                  ["month", dict.dashboard.chartGranularityMonth],
+                  ["quarter", dict.dashboard.chartGranularityQuarter],
+                  ["year", dict.dashboard.chartGranularityYear],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setCashFlowGranularity(value)}
+                  className={cn(
+                    "rounded-md px-2.5 py-1 text-xs font-semibold transition-colors",
+                    cashFlowGranularity === value
+                      ? "bg-background text-foreground shadow-sm ring-1 ring-border/80"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
-          <p className="text-[11px] leading-snug text-muted-foreground">{dict.dashboard.chartGrowthFootnote}</p>
+
+          {txLoading ? (
+            <div className="space-y-3" aria-hidden>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="h-[4.25rem] animate-pulse rounded-xl border border-border/60 bg-muted/30" />
+                ))}
+              </div>
+              <div className="h-40 animate-pulse rounded-xl border border-border/60 bg-muted/20" />
+            </div>
+          ) : (
+            <>
+              <div
+                className="grid grid-cols-2 gap-2 sm:grid-cols-4"
+                role="region"
+                aria-label={dict.dashboard.chartTitle}
+              >
+                <div className="rounded-xl border border-border/70 bg-muted/20 px-3 py-2.5">
+                  <div className="text-[11px] font-medium text-muted-foreground">
+                    {dict.dashboard.chartMtdIncome}
+                  </div>
+                  <div className="mt-1 font-semibold tabular-nums">
+                    <Money amount={monthMtdIncome} locale={locale} />
+                  </div>
+                </div>
+                <div className="rounded-xl border border-border/70 bg-muted/20 px-3 py-2.5">
+                  <div className="text-[11px] font-medium text-muted-foreground">
+                    {dict.dashboard.chartMtdExpenses}
+                  </div>
+                  <div className="mt-1 font-semibold tabular-nums">
+                    <Money amount={monthMtdExpense} locale={locale} />
+                  </div>
+                </div>
+                <div className="rounded-xl border border-border/70 bg-muted/20 px-3 py-2.5">
+                  <div className="text-[11px] font-medium text-muted-foreground">{dict.dashboard.chartMtdNet}</div>
+                  <div
+                    className={cn(
+                      "mt-1 font-semibold tabular-nums",
+                      monthMtdNet >= 0 ? "text-emerald-700 dark:text-emerald-500" : "text-rose-700 dark:text-rose-400"
+                    )}
+                  >
+                    <Money amount={monthMtdNet} locale={locale} />
+                  </div>
+                </div>
+                <div className="col-span-2 rounded-xl border border-border/70 bg-muted/20 px-3 py-2.5 sm:col-span-1">
+                  <div className="text-[11px] font-medium text-muted-foreground">
+                    {dict.dashboard.chartRunningTotal}
+                  </div>
+                  <div
+                    className={cn(
+                      "mt-1 font-semibold tabular-nums",
+                      runningEnd >= 0 ? "text-emerald-700 dark:text-emerald-500" : "text-rose-700 dark:text-rose-400"
+                    )}
+                  >
+                    <Money amount={runningEnd} locale={locale} />
+                  </div>
+                </div>
+              </div>
+
+          {!cashFlowHasActivity ? (
+            <div className="space-y-3 rounded-xl border border-dashed border-border bg-muted/10 px-4 py-5 text-sm text-muted-foreground">
+              <p className="text-center font-medium text-foreground/90">{dict.dashboard.chartEmptyMonth}</p>
+              {transactions.length === 0 ? (
+                <>
+                  <p className="leading-relaxed">{dict.dashboard.chartEmptyNoTransactionLines}</p>
+                  <LinkButton href="/financials" variant="outline" className="h-10 w-full sm:w-auto">
+                    {dict.nav.financials}
+                  </LinkButton>
+                </>
+              ) : (
+                <p className="leading-relaxed">{dict.dashboard.chartEmptyTxOutsideWindow}</p>
+              )}
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-xl border border-border/80">
+              <div className="max-h-[min(22rem,55vh)] overflow-y-auto overscroll-contain">
+                <table className="w-full min-w-[28rem] border-collapse text-sm">
+                  <caption className="sr-only">{dict.dashboard.chartMonthProfit}</caption>
+                  <thead className="sticky top-0 z-10 border-b border-border bg-card shadow-[0_1px_0_0_hsl(var(--border))]">
+                    <tr>
+                      <th
+                        scope="col"
+                        className="px-3 py-2.5 text-start text-xs font-semibold text-muted-foreground"
+                      >
+                        {dict.dashboard.chartColPeriod}
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-2.5 text-end text-xs font-semibold text-muted-foreground"
+                      >
+                        {dict.transactions.income}
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-2.5 text-end text-xs font-semibold text-muted-foreground"
+                      >
+                        {dict.transactions.expenses}
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-2.5 text-end text-xs font-semibold text-muted-foreground"
+                      >
+                        {dict.dashboard.chartColPeriodNet}
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-3 py-2.5 text-end text-xs font-semibold text-muted-foreground"
+                      >
+                        {dict.dashboard.chartColRunning}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {displaySeries.map((row) => (
+                      <tr
+                        key={row.periodKey}
+                        className="border-b border-border/60 bg-card last:border-b-0"
+                      >
+                        <th
+                          scope="row"
+                          className="whitespace-nowrap px-3 py-2 text-start font-medium text-foreground"
+                        >
+                          {row.label}
+                        </th>
+                        <td className="px-3 py-2 text-end tabular-nums">
+                          {row.income !== 0 ? (
+                            <span className="text-emerald-700 dark:text-emerald-500">
+                              <Money amount={row.income} locale={locale} />
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 text-end tabular-nums">
+                          {row.expense !== 0 ? (
+                            <span className="text-rose-700 dark:text-rose-400">
+                              <Money amount={row.expense} locale={locale} />
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        <td
+                          className={cn(
+                            "px-3 py-2 text-end font-medium tabular-nums",
+                            row.profit >= 0
+                              ? "text-emerald-700 dark:text-emerald-500"
+                              : "text-rose-700 dark:text-rose-400"
+                          )}
+                        >
+                          <Money amount={row.profit} locale={locale} />
+                        </td>
+                        <td
+                          className={cn(
+                            "px-3 py-2 text-end font-semibold tabular-nums",
+                            row.cumulative >= 0
+                              ? "text-emerald-800 dark:text-emerald-400"
+                              : "text-rose-800 dark:text-rose-300"
+                          )}
+                        >
+                          <Money amount={row.cumulative} locale={locale} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 text-sm">
+                <div className="flex items-center justify-between rounded-xl border border-border/60 bg-background/10 px-3 py-2">
+                  <span className="text-muted-foreground">{dict.dashboard.paid}</span>
+                  <span className="font-semibold">
+                    <Money amount={paid} locale={locale} />
+                  </span>
+                </div>
+                <div className="flex items-center justify-between rounded-xl border border-border/60 bg-background/10 px-3 py-2">
+                  <span className="text-muted-foreground">{dict.dashboard.unpaid}</span>
+                  <span className="font-semibold">
+                    <Money amount={unpaid} locale={locale} />
+                  </span>
+                </div>
+                <div
+                  className="flex items-center justify-between gap-2 rounded-xl border border-border/60 bg-background/10 px-3 py-2"
+                  title={dict.dashboard.chartGrowthFootnote}
+                >
+                  <span className="text-muted-foreground">{dict.dashboard.growth}</span>
+                  <span className="font-semibold tabular-nums">{growthDisplay}</span>
+                </div>
+              </div>
+              <p className="text-[11px] leading-snug text-muted-foreground">
+                {dict.dashboard.chartGrowthFootnote}
+              </p>
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -518,7 +825,7 @@ export default function DashboardPage() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base">{dict.dashboard.quickActions}</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3 sm:flex-row">
+        <CardContent className="flex flex-col flex-wrap gap-3 sm:flex-row">
           <LinkButton
             href="/projects"
             className="h-11 text-base max-md:h-12 max-md:rounded-full max-md:font-semibold max-md:shadow-[0_6px_20px_rgba(91,33,182,0.35)]"
@@ -532,17 +839,20 @@ export default function DashboardPage() {
           >
             {dict.dashboard.createProject}
           </LinkButton>
+          <LinkButton
+            href="/personal-finance"
+            variant="outline"
+            className="h-11 text-base max-md:h-12 max-md:rounded-full max-md:border-violet-300 max-md:font-semibold max-md:text-violet-700 max-md:hover:bg-violet-50"
+          >
+            {dict.nav.personalFinance}
+          </LinkButton>
         </CardContent>
       </Card>
 
-      {loading ? (
-        <div className="text-sm text-muted-foreground">Loading…</div>
-      ) : error ? (
-        <div className="text-sm text-destructive">{error}</div>
-      ) : txLoading ? (
-        <div className="text-sm text-muted-foreground">Loading…</div>
-      ) : txError ? (
-        <div className="text-sm text-destructive">{txError}</div>
+      {error ? (
+        <div className="text-sm text-destructive" role="alert">
+          {error}
+        </div>
       ) : null}
     </div>
   )

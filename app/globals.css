@@ -137,8 +137,8 @@
   --sidebar-border: oklch(0.86 0.06 294);
   --sidebar-ring: oklch(0.55 0.18 292 / 42%);
 
-  /* Dashboard hero pull-up on mobile (keep smaller than header safe toolbar height). */
-  --mobile-hero-overlap: 3.5rem;
+  /* Dashboard hero pull-up on mobile — lower value = hero sits further down */
+  --mobile-hero-overlap: 1.25rem;
 }
 
 .dark {
@@ -175,7 +175,7 @@
   --sidebar-border: oklch(1 0.01 255 / 14%);
   --sidebar-ring: oklch(0.92 0 0 / 40%);
 
-  --mobile-hero-overlap: 3rem;
+  --mobile-hero-overlap: 1.125rem;
 }
 
 @layer base {

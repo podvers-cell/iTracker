@@ -14,7 +14,8 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "iTrack",
-    statusBarStyle: "default",
+    /* default = white status-bar well; use translucent so purple header shows in safe area */
+    statusBarStyle: "black-translucent",
   },
   formatDetection: {
     telephone: false,
@@ -28,10 +29,17 @@ export const metadata: Metadata = {
   },
 };
 
+/** Matches mobile AppShell purple chrome (violet-600 / violet-900) for OS status / address bar */
+const MOBILE_CHROME_THEME_LIGHT = "#6d28d9";
+const MOBILE_CHROME_THEME_DARK = "#4c1d95";
+
 export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#4f46e5" },
-    { media: "(prefers-color-scheme: dark)", color: "#4f46e5" },
+    { media: "(prefers-color-scheme: light)", color: MOBILE_CHROME_THEME_LIGHT },
+    { media: "(prefers-color-scheme: dark)", color: MOBILE_CHROME_THEME_DARK },
   ],
   colorScheme: "light dark",
 };

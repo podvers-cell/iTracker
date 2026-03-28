@@ -4,13 +4,15 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
-  LayoutDashboard,
+  House,
   Plus,
   FolderKanban,
   Users,
   Wallet,
+  Wallet2,
   Settings,
   Search,
+  ListTodo,
 } from "lucide-react"
 
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher"
@@ -30,6 +32,7 @@ import { cn } from "@/lib/utils"
 import { useProjects } from "@/components/projects/useProjects"
 import { useAllTransactions } from "@/components/projects/useAllTransactions"
 import { useCustomers } from "@/components/customers/useCustomers"
+import { useGeneralTasks } from "@/components/tasks/useGeneralTasks"
 import { SmartSearchPalette, SmartSearchTrigger } from "@/components/search/SmartSearchPalette"
 import { DeadlineNotificationsButton } from "@/components/notifications/DeadlineNotificationsButton"
 import { AppLogo } from "@/components/branding/AppLogo"
@@ -98,7 +101,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const items: NavItem[] = [
     {
       href: "/dashboard",
-      icon: <LayoutDashboard className="size-4" />,
+      icon: <House className="size-4" strokeWidth={2.25} />,
       label: dict.nav.dashboard,
     },
     {
@@ -117,9 +120,19 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
       label: dict.nav.customers,
     },
     {
+      href: "/tasks",
+      icon: <ListTodo className="size-4" strokeWidth={2.25} />,
+      label: dict.nav.tasks,
+    },
+    {
       href: "/financials",
       icon: <Wallet className="size-4" />,
       label: dict.nav.financials,
+    },
+    {
+      href: "/personal-finance",
+      icon: <Wallet2 className="size-4" />,
+      label: dict.nav.personalFinance,
     },
   ]
 
@@ -133,10 +146,10 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             href={item.href}
             onClick={onNavigate}
             className={cn(
-              "flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200",
+              "flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200 [&_svg]:shrink-0",
               active
-                ? "bg-gradient-to-r from-violet-200/80 to-purple-100/90 text-violet-950 shadow-sm ring-1 ring-violet-300/60"
-                : "text-sidebar-foreground hover:bg-white/55 hover:ring-1 hover:ring-violet-200/50"
+                ? "bg-gradient-to-r from-violet-200/80 to-purple-100/90 text-violet-950 shadow-sm ring-1 ring-violet-300/60 [&_svg]:text-violet-800"
+                : "text-sidebar-foreground [&_svg]:text-violet-600 hover:bg-white/55 hover:ring-1 hover:ring-violet-200/50"
             )}
           >
             {item.icon}
@@ -224,6 +237,15 @@ function MobileSettingsSheet({
               </div>
             </div>
             <Separator />
+            <Link
+              href="/personal-finance"
+              className="flex h-11 items-center gap-2 rounded-xl border border-violet-200/70 bg-violet-50/50 px-4 text-sm font-medium text-violet-950 hover:bg-violet-100/70"
+              onClick={() => setOpen(false)}
+            >
+              <Wallet2 className="size-4 shrink-0" aria-hidden />
+              {dict.nav.personalFinance}
+            </Link>
+            <Separator />
             <AccountDataSection onAfterClose={() => setOpen(false)} />
             <Separator />
             <LogoutButton className="h-11 w-full justify-center" />
@@ -239,83 +261,84 @@ function MobileBottomNav() {
   const { dict } = useI18n()
 
   const items: Array<{ href: string; label: string; icon: React.ReactNode }> = [
-    { href: "/dashboard", label: dict.nav.dashboard, icon: <LayoutDashboard className="size-5" /> },
+    { href: "/dashboard", label: dict.nav.dashboard, icon: <House className="size-5" strokeWidth={2.25} /> },
     { href: "/projects", label: dict.nav.projects, icon: <FolderKanban className="size-5" /> },
-    { href: "/projects/new", label: dict.nav.newProject, icon: <Plus className="size-5" /> },
     { href: "/customers", label: dict.nav.customers, icon: <Users className="size-5" /> },
+    { href: "/tasks", label: dict.nav.tasks, icon: <ListTodo className="size-5" strokeWidth={2.25} /> },
     { href: "/financials", label: dict.nav.financials, icon: <Wallet className="size-5" /> },
   ]
 
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === "/dashboard"
-    if (href === "/projects") return pathname === "/projects" || pathname?.startsWith("/projects/")
-    if (href === "/projects/new") return pathname === "/projects/new"
+    if (href === "/projects")
+      return (
+        pathname === "/projects" ||
+        Boolean(pathname?.startsWith("/projects/") && pathname !== "/projects/new")
+      )
     if (href === "/customers") return pathname === "/customers"
+    if (href === "/tasks") return pathname === "/tasks"
     if (href === "/financials") return pathname === "/financials"
     return pathname === href
   }
 
-  /* Bottom bar: dir rtl keeps the same physical tab order for ar & en (dashboard next to the logo side). */
-  return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 md:hidden" dir="rtl">
-      <div className="mx-auto max-w-3xl px-4 pb-[max(env(safe-area-inset-bottom),14px)]">
-        <div className="rounded-full border border-violet-200/70 bg-white/95 px-1.5 pb-1.5 pt-3 shadow-[0_12px_44px_rgba(91,33,182,0.2)] backdrop-blur-xl">
-          <div className="grid w-full grid-cols-5 items-end gap-0.5">
-            {items.map((item) => {
-              const active = isActive(item.href)
-              const isNewProject = item.href === "/projects/new"
+  const newProjectActive = pathname === "/projects/new"
 
-              if (isNewProject) {
+  return (
+    <nav className="fixed inset-x-0 bottom-0 z-20 md:hidden">
+      <div className="mx-auto max-w-3xl px-4 pb-[max(env(safe-area-inset-bottom),14px)]">
+        <div className="relative">
+          <Link
+            href="/projects/new"
+            aria-label={dict.nav.newProject}
+            className="group absolute bottom-[calc(100%+10px)] right-3 z-30 flex flex-col items-center gap-1.5 sm:right-5"
+          >
+            <span
+              className={cn(
+                "grid size-[3.25rem] place-items-center rounded-full text-white shadow-[0_10px_28px_rgba(109,40,217,0.5)] ring-4 ring-background transition-transform duration-200 active:scale-[0.96]",
+                newProjectActive
+                  ? "bg-gradient-to-br from-violet-600 to-purple-700"
+                  : "bg-gradient-to-br from-violet-500 to-purple-600 group-hover:from-violet-600 group-hover:to-purple-700"
+              )}
+            >
+              <Plus className="size-7 shrink-0 stroke-[2.5]" aria-hidden />
+            </span>
+            <span
+              className={cn(
+                "max-w-[5rem] px-0.5 text-center text-[9px] font-semibold leading-snug text-balance text-foreground drop-shadow-sm",
+                newProjectActive ? "text-violet-700" : "text-zinc-600 group-hover:text-violet-600"
+              )}
+            >
+              {dict.nav.newProject}
+            </span>
+          </Link>
+
+          <div className="rounded-full border border-violet-200/70 bg-white/95 px-1.5 pb-1.5 pt-3 shadow-[0_12px_44px_rgba(91,33,182,0.2)] backdrop-blur-xl">
+            <div className="grid w-full grid-cols-5 items-end gap-0.5" dir="rtl">
+              {items.map((item) => {
+                const active = isActive(item.href)
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className="group relative z-10 -mt-11 flex flex-col items-center gap-2 pb-0.5"
+                    className={cn(
+                      "flex flex-col items-center justify-center gap-0.5 rounded-full px-1 py-2 text-[10px] leading-none font-medium transition-all duration-200",
+                      active
+                        ? "bg-gradient-to-b from-violet-100 to-violet-50 text-violet-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]"
+                        : "text-zinc-400 hover:text-violet-600"
+                    )}
                   >
-                    <span
-                      className={cn(
-                        "grid size-[3.25rem] place-items-center rounded-full text-white shadow-[0_8px_24px_rgba(109,40,217,0.45)] ring-4 ring-white/90 transition-transform duration-200 active:scale-[0.96]",
-                        active
-                          ? "bg-gradient-to-br from-violet-600 to-purple-700"
-                          : "bg-gradient-to-br from-violet-500 to-purple-600 group-hover:from-violet-600 group-hover:to-purple-700"
-                      )}
-                    >
-                      <Plus className="size-7 shrink-0 stroke-[2.5]" aria-hidden />
-                    </span>
-                    <span
-                      className={cn(
-                        "max-w-[4.5rem] px-0.5 text-center text-[9px] font-semibold leading-snug text-balance",
-                        active ? "text-violet-700" : "text-zinc-500 group-hover:text-violet-600"
-                      )}
-                    >
-                      {item.label}
-                    </span>
+                    {React.cloneElement(item.icon as React.ReactElement<{ className?: string }>, {
+                      className: cn(
+                        (item.icon as React.ReactElement<{ className?: string }>).props.className,
+                        "size-5 shrink-0",
+                        active ? "text-violet-600" : "text-current"
+                      ),
+                    })}
+                    <span className="max-w-full truncate px-0.5">{item.label}</span>
                   </Link>
                 )
-              }
-
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "flex flex-col items-center justify-center gap-0.5 rounded-full px-1 py-2 text-[10px] leading-none font-medium transition-all duration-200",
-                    active
-                      ? "bg-gradient-to-b from-violet-100 to-violet-50 text-violet-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]"
-                      : "text-zinc-400 hover:text-violet-600"
-                  )}
-                >
-                  {React.cloneElement(item.icon as React.ReactElement<{ className?: string }>, {
-                    className: cn(
-                      (item.icon as React.ReactElement<{ className?: string }>).props.className,
-                      "size-5 shrink-0",
-                      active ? "text-violet-600" : "text-current"
-                    ),
-                  })}
-                  <span className="max-w-full truncate px-0.5">{item.label}</span>
-                </Link>
-              )
-            })}
+              })}
+            </div>
           </div>
         </div>
       </div>
@@ -329,6 +352,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { projects, loading: projectsLoading } = useProjects()
   const { transactions, loading: txLoading } = useAllTransactions()
   const { customers } = useCustomers()
+  const { tasks: generalTasks } = useGeneralTasks()
   const [searchOpen, setSearchOpen] = React.useState(false)
   const dataLoading = projectsLoading || txLoading
 
@@ -451,7 +475,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           className="rounded-full border border-violet-200/70 bg-white/75 shadow-md shadow-violet-900/5 backdrop-blur-sm"
         />
       </div>
-      <main className="relative z-0 flex max-md:z-[11] flex-1 flex-col bg-background px-5 pb-28 max-md:px-4 max-md:pt-4 md:px-8 md:pb-0 md:pt-6">
+      <main className="relative z-0 flex max-md:z-[11] flex-1 flex-col bg-background px-5 pb-28 max-md:px-4 max-md:pb-36 max-md:pt-4 md:px-8 md:pb-0 md:pt-6">
         {children}
       </main>
     </div>
@@ -472,6 +496,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         projects={projects}
         customers={customers}
         transactions={transactions}
+        tasks={generalTasks}
       />
     </div>
   )

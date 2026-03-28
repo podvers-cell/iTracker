@@ -7,7 +7,12 @@ import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react"
 import { useI18n } from "@/components/i18n/I18nProvider"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { compareISODates, parseISODateLocal, toISODateLocal } from "@/lib/dates/localDate"
+import {
+  compareISODates,
+  formatISODateForDisplay,
+  parseISODateLocal,
+  toISODateLocal,
+} from "@/lib/dates/localDate"
 
 function startOfMonth(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), 1)
@@ -68,7 +73,7 @@ export function DatePickerField({
 
   const [open, setOpen] = React.useState(false)
   const [viewMonth, setViewMonth] = React.useState(() => startOfMonth(new Date()))
-  const todayIso = React.useMemo(() => toISODateLocal(new Date()), [])
+  const todayIso = toISODateLocal(new Date())
 
   const weekStartsOnMonday = locale !== "ar"
   const localeTag = locale === "ar" ? "ar" : undefined
@@ -100,14 +105,8 @@ export function DatePickerField({
 
   const displayLabel = React.useMemo(() => {
     if (!selected) return null
-    const d = parseISODateLocal(selected)
-    if (!d) return selected
-    return new Intl.DateTimeFormat(localeTag, {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    }).format(d)
-  }, [localeTag, selected])
+    return formatISODateForDisplay(selected, locale)
+  }, [locale, selected])
 
   const canPickToday = !minDate || compareISODates(todayIso, minDate) >= 0
 

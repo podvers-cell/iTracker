@@ -8,7 +8,7 @@ import { useI18n } from "@/components/i18n/I18nProvider"
 import type { Project } from "@/lib/data/projects"
 import type { Transaction } from "@/lib/data/transactions"
 import { buildDeadlineAlerts } from "@/lib/notifications/deadlineAlerts"
-import { formatMoney } from "@/lib/format/money"
+import { formatMoneyAmount } from "@/lib/format/money"
 import { cn } from "@/lib/utils"
 import {
   DropdownMenu,
@@ -168,7 +168,7 @@ export function DeadlineNotificationsButton({
                   {a.uncollected != null ? (
                     <p className="text-xs leading-snug text-muted-foreground">
                       {fillTemplate(dict.notifications.collectDue, {
-                        amount: formatMoney(a.uncollected, locale === "ar" ? "ar-AE" : "en-AE"),
+                        amount: formatMoneyAmount(a.uncollected, locale),
                       })}
                     </p>
                   ) : null}
