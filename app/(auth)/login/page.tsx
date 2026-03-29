@@ -149,7 +149,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="relative flex min-h-dvh flex-1 flex-col overflow-x-hidden">
+    <div className="relative flex min-h-dvh min-h-[100lvh] min-h-[-webkit-fill-available] flex-1 flex-col overflow-x-hidden bg-gradient-to-b from-violet-600 via-purple-700 to-indigo-950">
       <SplashStyleBackdrop />
       <div
         className="absolute left-4 top-[max(1rem,env(safe-area-inset-top))] z-30 sm:left-6"

@@ -49,7 +49,10 @@ export function SplashScreen() {
       aria-busy={phase === "show"}
       aria-label={locale === "ar" ? "جاري فتح التطبيق" : "Loading app"}
       className={cn(
-        "fixed inset-0 z-[9999] flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden",
+        /* Base gradient so iOS home-indicator / overscroll never shows body’s light bg through gaps */
+        "fixed inset-0 z-[9999] flex w-full flex-col items-center justify-center overflow-hidden",
+        "min-h-dvh min-h-[100lvh] min-h-[-webkit-fill-available]",
+        "bg-gradient-to-b from-violet-600 via-purple-700 to-indigo-950",
         "transition-[opacity,transform,filter] ease-[cubic-bezier(0.22,1,0.36,1)]",
         phase === "exit"
           ? "pointer-events-none scale-[1.03] opacity-0 blur-md duration-[720ms]"

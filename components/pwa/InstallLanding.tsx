@@ -84,7 +84,7 @@ export function InstallLanding() {
   }
 
   return (
-    <div className="relative min-h-[100dvh] overflow-x-hidden text-foreground">
+    <div className="relative min-h-[100dvh] min-h-[100lvh] min-h-[-webkit-fill-available] overflow-x-hidden bg-gradient-to-b from-violet-600 via-purple-700 to-indigo-950 text-foreground">
       <SplashStyleBackdrop className="fixed inset-0 -z-10 min-h-full" />
       <div className="pointer-events-none fixed inset-0 -z-10 bg-background/30 dark:bg-zinc-950/55" />
 

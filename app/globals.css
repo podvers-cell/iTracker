@@ -236,6 +236,16 @@ html[lang="en"] {
       radial-gradient(640px circle at 0% 85%, color-mix(in oklch, oklch(0.72 0.14 230) 8%, transparent), transparent 50%);
     background-attachment: fixed;
   }
+
+  /*
+   * iOS Safari / PWA: `background-attachment: fixed` often leaves a light band at the bottom
+   * (body’s base color) near the home indicator; scroll attachment matches paint to the viewport.
+   */
+  @supports (-webkit-touch-callout: none) {
+    body {
+      background-attachment: scroll;
+    }
+  }
 }
 
 @layer utilities {
