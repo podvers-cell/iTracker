@@ -35,6 +35,7 @@ import { useCustomers } from "@/components/customers/useCustomers"
 import { useGeneralTasks } from "@/components/tasks/useGeneralTasks"
 import { SmartSearchPalette, SmartSearchTrigger } from "@/components/search/SmartSearchPalette"
 import { DeadlineNotificationsButton } from "@/components/notifications/DeadlineNotificationsButton"
+import { PageDeveloperCredit } from "@/components/shell/PageDeveloperCredit"
 import { AppLogo } from "@/components/branding/AppLogo"
 import { SplashStyleBackdrop } from "@/components/shell/splash-shared"
 import { AccountDataSection } from "@/components/account/AccountDataSection"
@@ -414,7 +415,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <Separator className="my-4 bg-violet-200/50" />
         <AccountDataSection variant="compact" className="px-0.5" />
         <Separator className="my-4 bg-violet-200/50" />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" dir="ltr">
           <LanguageSwitcher />
           <LogoutButton />
         </div>
@@ -481,6 +482,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
       <main className="relative z-0 flex max-md:z-[11] flex-1 flex-col bg-background px-5 pb-28 max-md:px-4 max-md:pb-36 max-md:pt-10 md:px-8 md:pb-0 md:pt-6">
         {children}
+        <PageDeveloperCredit />
       </main>
     </div>
   )

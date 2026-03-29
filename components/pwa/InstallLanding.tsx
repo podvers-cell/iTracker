@@ -4,6 +4,7 @@ import * as React from "react"
 import Link from "next/link"
 
 import { AppLogo } from "@/components/branding/AppLogo"
+import { PageDeveloperCredit } from "@/components/shell/PageDeveloperCredit"
 import { SplashStyleBackdrop } from "@/components/shell/splash-shared"
 
 type BeforeInstallPromptEvent = Event & {
@@ -209,6 +210,8 @@ export function InstallLanding() {
               Install requires a supported browser. After installing, sign in to sync your projects and data.
             </p>
           </section>
+
+          <PageDeveloperCredit variant="auth" className="mt-12 w-full max-w-sm" />
         </div>
       </div>
     </div>

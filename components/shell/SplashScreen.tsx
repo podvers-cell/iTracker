@@ -42,11 +42,6 @@ export function SplashScreen() {
 
   if (phase === "gone") return null
 
-  const tagline =
-    locale === "ar"
-      ? "نرصّ الصفوف قبل ما تبدأ يومك"
-      : "Lining up your day — almost there…"
-
   return (
     <div
       role="status"
@@ -74,8 +69,8 @@ export function SplashScreen() {
         >
           {dict.appName}
         </h1>
-        <p className="mt-3 max-w-[280px] text-center text-sm leading-relaxed text-white/75 sm:text-[0.9375rem]">
-          {tagline}
+        <p className="mt-3 max-w-[min(22rem,calc(100vw-2rem))] text-center text-sm leading-relaxed text-white/75 sm:text-[0.9375rem]">
+          {dict.common.splashTagline}
         </p>
 
         <div className="mt-11 flex items-center gap-2" aria-hidden>

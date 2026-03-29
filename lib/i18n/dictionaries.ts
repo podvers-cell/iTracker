@@ -18,6 +18,13 @@ const enData = {
     welcome: "Welcome",
     pastCalendarDateNotAllowed: "Past dates cannot be selected. Choose today or a future day.",
     pastDateTimeNotAllowed: "This time has already passed today. Pick a later time.",
+    /** Root splash screen subtitle under the app name */
+    splashTagline: "Track your projects, tasks, and spending.",
+  },
+  footer: {
+    /** Shown at the end of page content; `creditName` links to Instagram */
+    creditPrefix: "Developed By ",
+    creditName: "Mahmoud Elgamal",
   },
   notifications: {
     title: "Notifications",
@@ -380,6 +387,11 @@ export const ar: Dictionary = {
     welcome: "مرحباً",
     pastCalendarDateNotAllowed: "لا يمكن اختيار تواريخ ماضية. اختر اليوم أو يوماً لاحقاً.",
     pastDateTimeNotAllowed: "هذا الوقت قد مضى اليوم. اختر وقتاً لاحقاً.",
+    splashTagline: "تتبع مشاريعك ، مهامك ، مصروفاتك",
+  },
+  footer: {
+    creditPrefix: "طُوِّر بواسطة ",
+    creditName: "Mahmoud Elgamal",
   },
   notifications: {
     title: "الإشعارات",

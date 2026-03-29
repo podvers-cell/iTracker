@@ -1,54 +1,13 @@
 "use client"
 
-import * as React from "react"
-
-import { useAuth } from "@/components/auth/AuthProvider"
-import type { GeneralTask } from "@/lib/data/generalTasks"
-import { getGeneralTasks } from "@/lib/data/generalTasks"
+import { useAppData } from "@/components/data/AppDataProvider"
 
 export function useGeneralTasks() {
-  const { user, loading: authLoading } = useAuth()
-  const [tasks, setTasks] = React.useState<GeneralTask[]>([])
-  const [loading, setLoading] = React.useState(true)
-  const [error, setError] = React.useState<string | null>(null)
-  const latestLoadId = React.useRef(0)
-
-  const runLoad = React.useCallback(async () => {
-    if (authLoading) return
-    const uid = user?.uid
-    if (!uid) {
-      setTasks([])
-      setLoading(false)
-      setError(null)
-      return
-    }
-
-    const id = ++latestLoadId.current
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await getGeneralTasks(uid)
-      if (latestLoadId.current !== id) return
-      setTasks(data)
-    } catch (e: unknown) {
-      if (latestLoadId.current !== id) return
-      setError(e instanceof Error ? e.message : "Failed to load tasks")
-    } finally {
-      if (latestLoadId.current === id) setLoading(false)
-    }
-  }, [user?.uid, authLoading])
-
-  React.useEffect(() => {
-    void runLoad()
-  }, [runLoad])
-
-  React.useEffect(() => {
-    const onOnline = () => void runLoad()
-    window.addEventListener("online", onOnline)
-    return () => window.removeEventListener("online", onOnline)
-  }, [runLoad])
-
-  const refresh = React.useCallback(() => void runLoad(), [runLoad])
-
-  return { tasks, loading: authLoading || loading, error, refresh }
+  const d = useAppData()
+  return {
+    tasks: d.tasks,
+    loading: d.authLoading || d.tasksLoading,
+    error: d.tasksError,
+    refresh: d.refreshTasks,
+  }
 }

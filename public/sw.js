@@ -1,5 +1,5 @@
 /* eslint-disable no-restricted-globals */
-const VERSION = "itrack-sw-v5"
+const VERSION = "itrack-sw-v6"
 const PRECACHE = [
   "/manifest.json",
   "/favicon.svg",

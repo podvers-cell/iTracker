@@ -29,6 +29,7 @@ import { useI18n } from "@/components/i18n/I18nProvider"
 import { clientAuth } from "@/lib/firebase/client"
 import { SubmitButton } from "@/components/ui/submit-button"
 import { useAuth } from "@/components/auth/AuthProvider"
+import { PageDeveloperCredit } from "@/components/shell/PageDeveloperCredit"
 import { SplashStyleBackdrop, SplashStyleLogoHero } from "@/components/shell/splash-shared"
 import {
   authGlassInputClass,
@@ -37,6 +38,11 @@ import {
   authGlassShellClass,
 } from "@/components/auth/authGlassClasses"
 import { cn } from "@/lib/utils"
+
+const loginFieldClass = cn(
+  authGlassInputClass,
+  "h-9 rounded-2xl px-3 py-0 text-sm placeholder:text-sm"
+)
 
 export default function LoginPage() {
   const { dict } = useI18n()
@@ -145,56 +151,64 @@ export default function LoginPage() {
   return (
     <div className="relative flex min-h-dvh flex-1 flex-col overflow-x-hidden">
       <SplashStyleBackdrop />
-      <div className="absolute start-4 top-[max(1rem,env(safe-area-inset-top))] z-30 sm:start-6">
+      <div
+        className="absolute left-4 top-[max(1rem,env(safe-area-inset-top))] z-30 sm:left-6"
+        dir="ltr"
+      >
         <div className="rounded-full border border-white/20 bg-white/15 p-0.5 shadow-lg backdrop-blur-md">
           <LanguageSwitcher iconOnly />
         </div>
       </div>
-      <div className="relative z-10 flex w-full flex-1 flex-col items-center justify-center px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(5.75rem,calc(env(safe-area-inset-top)+3.5rem))] sm:px-4 sm:pb-10 sm:pt-8">
-        <div className="w-full max-w-md space-y-4">
-        <div className={cn(authGlassShellClass, "px-5 py-5 sm:px-6 sm:py-6")}>
-          <div className="flex flex-col items-center gap-2 pb-4">
-            <SplashStyleLogoHero alt={dict.appName} />
+      <div className="relative z-10 flex w-full flex-1 flex-col items-center justify-center px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(4.5rem,calc(env(safe-area-inset-top)+2.75rem))] sm:px-4 sm:pb-8 sm:pt-6">
+        <div className="w-full max-w-[min(21rem,calc(100vw-1.25rem))] space-y-2.5 sm:max-w-sm">
+        <div
+          className={cn(
+            authGlassShellClass,
+            "rounded-2xl px-3 py-3.5 sm:px-4 sm:py-4"
+          )}
+        >
+          <div className="flex flex-col items-center gap-2 pb-4 sm:gap-3 sm:pb-5">
+            <SplashStyleLogoHero alt={dict.appName} logoClassName="splash-logo-enter" />
             <h1 className="text-center text-2xl font-bold tracking-tight text-white drop-shadow-[0_4px_20px_rgba(0,0,0,0.2)] sm:text-3xl">
               {dict.appName}
             </h1>
           </div>
 
-          <div className="space-y-4 border-t border-white/20 pt-5">
-            <div className="space-y-1">
-              <h2 className="text-lg font-semibold tracking-tight text-white sm:text-xl">{dict.login.title}</h2>
-              <p className="text-sm leading-relaxed text-white/75">{dict.login.subtitle}</p>
+          <div className="space-y-3 border-t border-white/20 pt-3">
+            <div className="space-y-0.5">
+              <h2 className="text-base font-semibold tracking-tight text-white">{dict.login.title}</h2>
+              <p className="text-[0.6875rem] leading-snug text-white/75 sm:text-xs">{dict.login.subtitle}</p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-2.5">
             <Button
               type="button"
               variant="outline"
-              className="h-11 w-full gap-3 rounded-full border-white/35 bg-white/10 text-base font-medium text-white shadow-none backdrop-blur-sm hover:bg-white/20 hover:text-white"
+              className="h-9 w-full gap-2 rounded-full border-white/35 bg-white/10 text-xs font-medium text-white shadow-none backdrop-blur-sm hover:bg-white/20 hover:text-white sm:text-sm"
               disabled={busy}
               onClick={() => void onGoogleSignIn()}
             >
-              <GoogleIcon className="size-5 shrink-0" />
+              <GoogleIcon className="size-4 shrink-0 sm:size-[1.125rem]" />
               {googleLoading ? "…" : dict.login.continueWithGoogle}
             </Button>
 
             {error ? (
-              <div className="text-sm font-medium text-red-200" role="alert">
+              <div className="text-xs font-medium leading-snug text-red-200" role="alert">
                 {error}
               </div>
             ) : null}
 
-            <div className="relative flex items-center py-1">
+            <div className="relative flex items-center py-0.5">
               <Separator className={cn("flex-1", authGlassSeparatorClass)} />
-              <span className="px-3 text-xs font-medium text-white/65">
+              <span className="max-w-[11rem] shrink px-2 text-center text-[0.65rem] font-medium leading-tight text-white/65 sm:max-w-none sm:px-3 sm:text-xs">
                 {dict.login.orContinueWithEmail}
               </span>
               <Separator className={cn("flex-1", authGlassSeparatorClass)} />
             </div>
 
-            <form onSubmit={onSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email" className={authGlassLabelClass}>
+            <form onSubmit={onSubmit} className="space-y-2.5">
+              <div className="space-y-1">
+                <Label htmlFor="email" className={cn(authGlassLabelClass, "text-xs")}>
                   {dict.login.email}
                 </Label>
                 <Input
@@ -205,11 +219,11 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder={dict.login.emailPlaceholder}
                   disabled={busy}
-                  className={authGlassInputClass}
+                  className={loginFieldClass}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password" className={authGlassLabelClass}>
+              <div className="space-y-1">
+                <Label htmlFor="password" className={cn(authGlassLabelClass, "text-xs")}>
                   {dict.login.password}
                 </Label>
                 <div className="relative">
@@ -220,27 +234,27 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder={dict.login.passwordPlaceholder}
-                    className={cn("pe-12", authGlassInputClass)}
+                    className={cn("pe-10", loginFieldClass)}
                     disabled={busy}
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon-sm"
-                    className="absolute end-1.5 top-1/2 -translate-y-1/2 rounded-xl text-white/70 hover:bg-white/15 hover:text-white disabled:pointer-events-none disabled:opacity-40"
+                    className="absolute end-1 top-1/2 h-7 w-7 -translate-y-1/2 rounded-lg text-white/70 hover:bg-white/15 hover:text-white disabled:pointer-events-none disabled:opacity-40"
                     onClick={() => setShowPassword((v) => !v)}
                     aria-label={showPassword ? dict.login.hidePassword : dict.login.showPassword}
                     aria-pressed={showPassword}
                     disabled={busy}
                   >
-                    {showPassword ? <EyeOff className="size-5" /> : <Eye className="size-5" />}
+                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </Button>
                 </div>
-                <div className="flex justify-end">
+                <div className="flex justify-end pt-0.5">
                   <Button
                     type="button"
                     variant="link"
-                    className="h-auto px-0 py-0 text-sm font-medium text-cyan-100/95 underline-offset-4 hover:text-white hover:no-underline"
+                    className="h-auto px-0 py-0 text-xs font-medium text-cyan-100/95 underline-offset-4 hover:text-white hover:no-underline"
                     disabled={busy}
                     onClick={openPasswordReset}
                   >
@@ -248,13 +262,13 @@ export default function LoginPage() {
                   </Button>
                 </div>
                 {dict.login.hint ? (
-                  <div className="text-xs text-white/55">{dict.login.hint}</div>
+                  <div className="text-[0.65rem] text-white/55 sm:text-xs">{dict.login.hint}</div>
                 ) : null}
               </div>
 
               <SubmitButton
-                className="h-11 w-full rounded-full border border-white/40 bg-gradient-to-r from-white via-violet-50 to-cyan-100 text-base font-semibold text-violet-900 shadow-lg hover:brightness-105 disabled:opacity-60"
-                disabled={googleLoading}
+                className="h-9 w-full rounded-full border border-white/40 bg-gradient-to-r from-white via-violet-50 to-cyan-100 text-xs font-semibold text-violet-900 shadow-lg hover:brightness-105 disabled:opacity-60 sm:text-sm"
+                disabled={busy}
               >
                 {submitting ? "..." : dict.login.submit}
               </SubmitButton>
@@ -263,7 +277,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <p className="text-center text-sm text-white/85">
+        <p className="text-center text-xs text-white/85 sm:text-sm">
           <Link
             href="/register"
             className="font-semibold text-white underline-offset-4 hover:underline"
@@ -271,6 +285,8 @@ export default function LoginPage() {
             {dict.login.createAccount}
           </Link>
         </p>
+
+        <PageDeveloperCredit variant="auth" />
 
         <Sheet
           open={resetOpen}
