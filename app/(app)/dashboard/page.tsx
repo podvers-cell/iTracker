@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import Image from "next/image"
+import Link from "next/link"
 import type { LucideIcon } from "lucide-react"
 import {
   Briefcase,
@@ -259,56 +260,100 @@ type StatCardProps = {
   icon: LucideIcon
   tone: StatTone
   className?: string
+  href?: string
+  /** Accessibility label when the card is a link (e.g. nav item name). */
+  linkAriaLabel?: string
+  /** Stronger frame for the primary KPI (e.g. net profit). */
+  hero?: boolean
+  staggerIndex?: number
 }
 
-function StatCard({ title, value, icon: Icon, tone, className }: StatCardProps) {
+function StatCard({
+  title,
+  value,
+  icon: Icon,
+  tone,
+  className,
+  href,
+  linkAriaLabel,
+  hero,
+  staggerIndex = 0,
+}: StatCardProps) {
   const t = STAT_TONE[tone]
-  return (
-    <div className="flex w-full min-w-0 flex-col items-center gap-3 md:contents">
-      <Card className={cn(t.card, "w-full max-md:rounded-2xl md:shadow-sm", className)}>
-        {/* Mobile: icon + value only; label sits under the card */}
-        <div className="flex flex-col items-center gap-2 px-0.5 py-3 text-center md:hidden">
-          <div
-            className={cn(
-              "grid size-11 shrink-0 place-items-center rounded-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]",
-              t.icon
-            )}
-          >
-            <Icon className="size-[1.35rem]" strokeWidth={2} />
-          </div>
-          <p
-            className={cn(
-              "max-w-full break-words text-lg font-bold tabular-nums leading-tight tracking-tight",
-              t.value
-            )}
-          >
-            {value}
-          </p>
-        </div>
 
-        {/* md+: classic row layout */}
-        <div className="hidden md:block">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between gap-3">
-              <CardTitle className={cn("text-sm font-medium", t.title)}>{title}</CardTitle>
-              <div className={cn("grid size-9 place-items-center rounded-xl", t.icon)}>
-                <Icon className="size-4" />
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className={cn("stat-number", t.value)}>{value}</div>
-          </CardContent>
+  const heroRing =
+    hero &&
+    (tone === "emerald"
+      ? "ring-2 ring-emerald-400/45 shadow-[0_16px_48px_-14px_rgba(16,185,129,0.36)] dark:ring-emerald-500/35"
+      : "ring-2 ring-rose-400/45 shadow-[0_16px_48px_-14px_rgba(244,63,94,0.28)] dark:ring-rose-500/35")
+
+  const card = (
+    <Card
+      className={cn(
+        t.card,
+        "w-full overflow-hidden max-md:rounded-2xl md:shadow-sm",
+        heroRing,
+        href && "transition-transform duration-200 hover:-translate-y-0.5",
+        className
+      )}
+    >
+      {/* Mobile: title above value, inside card */}
+      <div className="flex flex-col items-center gap-2 px-2 py-3 text-center md:hidden">
+        <div
+          className={cn(
+            "grid size-11 shrink-0 place-items-center rounded-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]",
+            t.icon
+          )}
+        >
+          <Icon className="size-[1.35rem]" strokeWidth={2} />
         </div>
-      </Card>
-      <p
-        className={cn(
-          "line-clamp-2 w-full px-0.5 text-center text-[10px] font-semibold leading-tight md:hidden",
-          t.title
-        )}
+        <p className={cn("line-clamp-2 w-full text-sm font-semibold leading-snug", t.title)}>{title}</p>
+        <p
+          className={cn(
+            "max-w-full break-words text-lg font-bold tabular-nums leading-tight tracking-tight",
+            t.value
+          )}
+        >
+          {value}
+        </p>
+      </div>
+
+      {/* md+: classic row layout */}
+      <div className="hidden md:block">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between gap-3">
+            <CardTitle className={cn("text-sm font-medium", t.title)}>{title}</CardTitle>
+            <div className={cn("grid size-9 place-items-center rounded-xl", t.icon)}>
+              <Icon className="size-4" />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className={cn("stat-number", t.value)}>{value}</div>
+        </CardContent>
+      </div>
+    </Card>
+  )
+
+  const inner =
+    href ? (
+      <Link
+        href={href}
+        aria-label={linkAriaLabel ?? title}
+        className="block w-full min-w-0 rounded-[1.25rem] no-underline outline-none max-md:rounded-2xl focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-offset-2"
       >
-        {title}
-      </p>
+        {card}
+      </Link>
+    ) : (
+      card
+    )
+
+  return (
+    <div
+      className="stat-card-reveal w-full min-w-0"
+      style={{ animationDelay: `${staggerIndex * 55}ms` }}
+    >
+      {inner}
     </div>
   )
 }
@@ -498,79 +543,119 @@ export default function DashboardPage() {
         </p>
       ) : null}
 
-      <div className="grid grid-cols-4 gap-1.5 sm:gap-2.5">
-        <StatCard
-          title={dict.dashboard.totalProjects}
-          value={loading ? "…" : totalProjects}
-          icon={Briefcase}
-          tone="sky"
-        />
-        <StatCard
-          title={dict.dashboard.active}
-          value={loading ? "…" : activeCount}
-          icon={Clock3}
-          tone="amber"
-        />
-        <StatCard
-          title={dict.dashboard.completed}
-          value={loading ? "…" : completedCount}
-          icon={CheckCircle2}
-          tone="emerald"
-        />
-        <StatCard
-          title={dict.dashboard.onHold}
-          value={loading ? "…" : onHoldCount}
-          icon={PauseCircle}
-          tone="rose"
-        />
-        <StatCard
-          title={dict.dashboard.totalContracts}
-          value={
-            loading ? (
-              <span className="inline-block h-7 min-w-[4.5rem] animate-pulse rounded-md bg-muted/80" aria-hidden />
-            ) : (
-              <Money amount={totalContract} locale={locale} />
-            )
-          }
-          icon={ClipboardList}
-          tone="violet"
-        />
-        <StatCard
-          title={dict.dashboard.totalIncome}
-          value={
-            loading || txLoading ? (
-              <span className="inline-block h-7 min-w-[4.5rem] animate-pulse rounded-md bg-muted/80" aria-hidden />
-            ) : (
-              <Money amount={paid} locale={locale} />
-            )
-          }
-          icon={Wallet}
-          tone="emerald"
-        />
-        <StatCard
-          title={dict.dashboard.totalExpenses}
-          value={
-            txLoading ? (
-              <span className="inline-block h-7 min-w-[4.5rem] animate-pulse rounded-md bg-muted/80" aria-hidden />
-            ) : (
-              <Money amount={totalExpenses} locale={locale} />
-            )
-          }
-          icon={ArrowDownCircle}
-          tone="red"
-        />
-        <StatCard
-          title={dict.dashboard.netProfit}
-          value={
-            loading || txLoading ? (
-              <span className="inline-block h-7 min-w-[4.5rem] animate-pulse rounded-md bg-muted/80" aria-hidden />
-            ) : (
-              <Money amount={netProfit} locale={locale} />
-            )
-          }
-          icon={HandCoins}
-          tone={netProfit >= 0 ? "emerald" : "red"}
-        />
+      <div className="space-y-5">
+        <section className="space-y-2">
+          <h2 className="px-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {dict.dashboard.statsSectionProjects}
+          </h2>
+          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4 sm:gap-2.5">
+            <StatCard
+              title={dict.dashboard.totalProjects}
+              value={loading ? "…" : totalProjects}
+              icon={Briefcase}
+              tone="sky"
+              href="/projects"
+              linkAriaLabel={dict.nav.projects}
+              staggerIndex={0}
+            />
+            <StatCard
+              title={dict.dashboard.active}
+              value={loading ? "…" : activeCount}
+              icon={Clock3}
+              tone="amber"
+              href="/projects"
+              linkAriaLabel={dict.nav.projects}
+              staggerIndex={1}
+            />
+            <StatCard
+              title={dict.dashboard.completed}
+              value={loading ? "…" : completedCount}
+              icon={CheckCircle2}
+              tone="emerald"
+              href="/projects"
+              linkAriaLabel={dict.nav.projects}
+              staggerIndex={2}
+            />
+            <StatCard
+              title={dict.dashboard.onHold}
+              value={loading ? "…" : onHoldCount}
+              icon={PauseCircle}
+              tone="rose"
+              href="/projects"
+              linkAriaLabel={dict.nav.projects}
+              staggerIndex={3}
+            />
+          </div>
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="px-0.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            {dict.dashboard.statsSectionFinancial}
+          </h2>
+          <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4 sm:gap-2.5">
+            <StatCard
+              title={dict.dashboard.totalContracts}
+              value={
+                loading ? (
+                  <span className="inline-block h-7 min-w-[4.5rem] animate-pulse rounded-md bg-muted/80" aria-hidden />
+                ) : (
+                  <Money amount={totalContract} locale={locale} />
+                )
+              }
+              icon={ClipboardList}
+              tone="violet"
+              href="/financials"
+              linkAriaLabel={dict.nav.financials}
+              staggerIndex={4}
+            />
+            <StatCard
+              title={dict.dashboard.totalIncome}
+              value={
+                loading || txLoading ? (
+                  <span className="inline-block h-7 min-w-[4.5rem] animate-pulse rounded-md bg-muted/80" aria-hidden />
+                ) : (
+                  <Money amount={paid} locale={locale} />
+                )
+              }
+              icon={Wallet}
+              tone="emerald"
+              href="/financials"
+              linkAriaLabel={dict.nav.financials}
+              staggerIndex={5}
+            />
+            <StatCard
+              title={dict.dashboard.totalExpenses}
+              value={
+                txLoading ? (
+                  <span className="inline-block h-7 min-w-[4.5rem] animate-pulse rounded-md bg-muted/80" aria-hidden />
+                ) : (
+                  <Money amount={totalExpenses} locale={locale} />
+                )
+              }
+              icon={ArrowDownCircle}
+              tone="red"
+              href="/financials"
+              linkAriaLabel={dict.nav.financials}
+              staggerIndex={6}
+            />
+            <StatCard
+              title={dict.dashboard.netProfit}
+              value={
+                loading || txLoading ? (
+                  <span className="inline-block h-7 min-w-[4.5rem] animate-pulse rounded-md bg-muted/80" aria-hidden />
+                ) : (
+                  <Money amount={netProfit} locale={locale} />
+                )
+              }
+              icon={HandCoins}
+              tone={netProfit >= 0 ? "emerald" : "red"}
+              href="/financials"
+              linkAriaLabel={dict.nav.financials}
+              staggerIndex={7}
+              hero
+            />
+          </div>
+        </section>
       </div>
 
       <Card

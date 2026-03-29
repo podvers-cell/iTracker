@@ -140,6 +140,8 @@ const enData = {
       "You have records, but none fall in the periods shown for this view. Try another grouping or check dates in Financials.",
     chartDateRangeShown: "Range",
     loadingDashboard: "Loading your numbers…",
+    statsSectionProjects: "Projects",
+    statsSectionFinancial: "Money",
   },
   datePicker: {
     placeholder: "Select date",
@@ -507,6 +509,8 @@ export const ar: Dictionary = {
       "توجد سجلات لكن لا يقع منها شيء ضمن الفترات في هذا العرض. جرّب تجميعاً آخر أو راجع التواريخ في الماليات.",
     chartDateRangeShown: "النطاق",
     loadingDashboard: "جاري تحميل الأرقام…",
+    statsSectionProjects: "المشاريع",
+    statsSectionFinancial: "المالية",
   },
   datePicker: {
     placeholder: "اختر التاريخ",

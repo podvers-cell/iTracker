@@ -290,6 +290,29 @@ html[lang="en"] {
     @apply text-3xl font-semibold tracking-tight;
   }
 
+  @keyframes stat-card-reveal {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .stat-card-reveal {
+    animation: stat-card-reveal 0.48s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .stat-card-reveal {
+      animation: none;
+      opacity: 1;
+      transform: none;
+    }
+  }
+
   /* Text glow helpers (use as plain classes, no @apply) */
   .text-glow {
     text-shadow:
